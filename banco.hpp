@@ -12,6 +12,7 @@ namespace pgsql {
 class query_result {
 public:
     query_result();
+    query_result(PGresult *) throw (const std::runtime_error&);
     ~query_result();
     void clear();
     const bool success() const;
@@ -33,7 +34,6 @@ public:
     query_result execute_returning_query(const std::string&) throw(const std::runtime_error&);
     void prepare_statement(const std::string&,  const std::string&,  const int&) throw (const std::runtime_error&);
     void execute_prepared_statement(const std::string&,  const std::vector<std::string>&) throw (const std::runtime_error&);
-    // TODO Implement next method
     query_result execute_returning_prepared_statement(const std::string&,  const std::vector<std::string>&) throw (const std::runtime_error&);
 protected:
     PGconn * dbconn;
