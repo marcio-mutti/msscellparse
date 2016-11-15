@@ -19,7 +19,8 @@ void pgsql::handle_command(PGresult* result, const std::string& context="") thro
     if (has_error) throw (runtime_error(error_message));
 }
 
-pgsql::query_result::query_result() : success_(false), n_columns(0), n_rows(0) {}
+pgsql::query_result::query_result() : success_(false), n_columns(0), n_rows(0)  {}
+pgsql::query_result::~query_result()                                            {}
 void pgsql::query_result::clear() {
     success_ = false;
     n_columns = n_rows = 0;
@@ -55,7 +56,8 @@ void pgsql::query_result::load_from_result(PGresult* result) throw(const runtime
 }
 
 pgsql::db_connection::db_connection() : dbconn(nullptr) {}
-pgsql::query_result::~query_result()                    {}
+pgsql::db_connection::~db_connection()                  {}
+
 void pgsql::db_connection::load_database_config(const std::string& filename) {
   ifstream configfile(filename);
   bool titulo(true);
@@ -102,6 +104,20 @@ pgsql::query_result pgsql::db_connection::execute_returning_query(const std::str
     result.load_from_result(PQexec(dbconn, query.c_str()));
     return result;
 }
+void pgsql::db_connection::prepare_statement(const string& stmt_name, const string& stmt_query,  const int& count) throw (const runtime_error&) {
+    handle_command(PQprepare(dbconn, stmt_name.c_str(), stmt_query.c_str(), count, NULL));
+    n_paremeter_for_stmt.insert({stmt_name, count});
+}
+void pgsql::db_connection::execute_prepared_statement(const string& stmt_name, const vector<string>& stmt_parameters) throw(const runtime_error&)
+{
+    const char * paramvalues[n_paremeter_for_stmt.at(stmt_name)];
+    int n(0);
+    for (vector<string>::const_iterator piter = stmt_parameters.cbegin(); piter != stmt_parameters.cend(); ++piter) {
+        paramvalues[n++] = piter->c_str();
+    }
+    handle_command(PQexecPrepared(dbconn, stmt_name.c_str(), n_paremeter_for_stmt.at(stmt_name), paramvalues, NULL, NULL, 0));
+}
+
 
     
     
