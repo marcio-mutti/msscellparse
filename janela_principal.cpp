@@ -36,6 +36,7 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     btn_carregar->signal_clicked().connect ( sigc::mem_fun ( *this, &janela_principal::slot_btn_carregar ) );
     btn_subir_banco->signal_clicked().connect ( sigc::mem_fun ( *this, &janela_principal::slot_btn_subir_banco ) );
     signal_new_file.connect ( sigc::mem_fun ( runner, &logparser::parser::slot_new_file ) );
+    runner.signal_n_of_mobswitches().connect(sigc::mem_fun(*this, &janela_principal::slot_change_n_mobswitch));
     //box_principal->show_all_children();
     show_all_children();
 }
@@ -70,6 +71,8 @@ void janela_principal::slot_btn_carregar() {
 }
 void janela_principal::slot_btn_subir_banco() {
 }
-
+void janela_principal::slot_change_n_mobswitch(const string& n_value) {
+    lbl_n_23g->set_text(n_value);
+}
 
 

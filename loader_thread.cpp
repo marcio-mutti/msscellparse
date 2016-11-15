@@ -44,6 +44,10 @@ void logparser::parser::slot_new_file ( const string& filename, const logtype& t
         message += to_string ( type_of_logger ) + '\n';
         throw ( domain_error ( message ) );
     }
+    signal_n_of_mobswitches_.emit(to_string(lista_de_mobswitches.size()));
+}
+sigc::signal<void, const string&> logparser::parser::signal_n_of_mobswitches() {
+    return signal_n_of_mobswitches_;
 }
 void logparser::parser::slot_run() throw ( const runtime_error& ) {
 

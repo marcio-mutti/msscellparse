@@ -23,6 +23,7 @@ protected:
     void slot_btn_load_4g();
     void slot_btn_carregar();
     void slot_btn_subir_banco();
+    void slot_change_n_mobswitch(const std::string&);
     // Variables
     logparser::parser runner;
 };
