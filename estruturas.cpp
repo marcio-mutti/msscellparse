@@ -1,5 +1,7 @@
 #include "estruturas.hpp"
 
+#include <algorithm>
+
 using namespace std;
 
 // Metodos relacionados a celulas
@@ -19,18 +21,18 @@ const bool celula::operator==(const celula& oth) const {
 void celula::set_cgi(const int& mcc_, const int& mnc_, const int& lac_sac_, const int& cid_) {
 	mcc=mcc_;mnc=mnc_;lac_sac=lac_sac_;cid=cid_;
 }
-void celula::set_name(const std::string& name_)				{ name=name_;}
-void celula::set_mcc(const int& mcc_) 						{ mcc=mcc_; }
-void celula::set_mnc(const int& mnc_)						{ mnc=mnc_; }
-void celula::set_lac_sac(const int& lac_sac_)				{ lac_sac=lac_sac_; }
-void celula::set_cid(const int& cid_)						{ cid=cid_; }
-void celula::set_status(const string& status_)				{ status=status_; }
-const string celula::get_name() const						{ return name; }
-const int celula::get_mcc() const							{ return mcc; }
-const int celula::get_mnc() const							{ return mnc; }
-const int celula::get_lac_sac() const						{ return lac_sac; }
-const int celula::get_cid() const							{ return cid; }
-const string celula::get_status() const						{ return status; }
+void celula::set_name(const std::string& name_)     { name=name_;}
+void celula::set_mcc(const int& mcc_)               { mcc=mcc_; }
+void celula::set_mnc(const int& mnc_)               { mnc=mnc_; }
+void celula::set_lac_sac(const int& lac_sac_)       { lac_sac=lac_sac_; }
+void celula::set_cid(const int& cid_)               { cid=cid_; }
+void celula::set_status(const string& status_)      { status=status_; }
+const string celula::get_name() const               { return name; }
+const int celula::get_mcc() const                   { return mcc; }
+const int celula::get_mnc() const                   { return mnc; }
+const int celula::get_lac_sac() const               { return lac_sac; }
+const int celula::get_cid() const                   { return cid; }
+const string celula::get_status() const             { return status; }
 
 //Metodos relacionados a controller
 controller::controller()	{}
@@ -48,12 +50,15 @@ vector<celula>::iterator controller::find_celula(const celula& celula_) {
 		if (*citer == celula_) return citer;
 	return lista_de_celulas.end();
 }
+const bool controller::operator==(const controller& oth) const { return name==oth.name; }
+
 const bool controller::has_celula(const celula& celula_) {
 	return !(lista_de_celulas.end() == find_celula(celula_));
 }
-const string controller::get_name() const 			{ return name; }
-void controller::set_name(const string& name_)		{ name=name_; }
-void controller::add_lac_sac(const int& lac_sac_)	{ lista_de_lacs_sacs.insert(lac_sac_); }
+const string controller::get_name() const           { return name; }
+void controller::set_name(const string& name_)      { name=name_; }
+void controller::add_lac_sac(const int& lac_sac_)   { lista_de_lacs_sacs.insert(lac_sac_); }
+
 
 //Metodos relacionados a BSCs
 
@@ -68,10 +73,14 @@ mobswitch::mobswitch() {}
 mobswitch::~mobswitch() {}
 void mobswitch::set_name(const string& name_)				{ name=name_; }
 vector<bsc>::iterator mobswitch::add_bsc(const bsc& bsc_) {
-	return lista_de_bscs.insert(lista_de_bscs.end(),bsc_);
+    vector<bsc>::iterator result(find(lista_de_bscs.begin(),lista_de_bscs.end(),bsc_.get_name()));
+    if (result != lista_de_bscs.end()) return result;
+    return lista_de_bscs.insert(lista_de_bscs.end(),bsc_);
 }
 vector<rnc>::iterator mobswitch::add_rnc(const rnc& rnc_) {
-	return lista_de_rncs.insert(lista_de_rncs.end(),rnc_);
+    vector<rnc>::iterator result(find(lista_de_rncs.begin(),lista_de_rncs.end(),rnc_.get_name()));
+    if (result != lista_de_rncs.end()) return result;
+    return lista_de_rncs.insert(lista_de_rncs.end(),rnc_);
 }
 vector<bsc>::iterator mobswitch::find_bsc_by_name(const string& bsc_) {
 	vector<bsc>::iterator result(lista_de_bscs.begin());

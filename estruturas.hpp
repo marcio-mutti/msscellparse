@@ -43,6 +43,7 @@ public:
   const std::string get_name() const;
   void set_name(const std::string&);
   void add_lac_sac(const int&);
+  const bool operator==(const controller&) const;
 
 protected:
   std::string name;
@@ -75,6 +76,10 @@ protected:
   std::string name;
   std::vector<bsc> lista_de_bscs;
   std::vector<rnc> lista_de_rncs;
+};
+
+class mme {
+    
 };
 #endif
 

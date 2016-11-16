@@ -2,6 +2,7 @@
 #define JANELA_PRINCIPAL
 
 #include <gtkmm-3.0/gtkmm.h>
+#include <boost/thread.hpp>
 
 # include "loader_thread.hpp"
 
@@ -24,8 +25,10 @@ protected:
     void slot_btn_carregar();
     void slot_btn_subir_banco();
     void slot_change_n_mobswitch(const std::string&);
+    void slot_ready_for_new_work();
     // Variables
     logparser::parser runner;
+    boost::thread work_thread;
 };
 
 
