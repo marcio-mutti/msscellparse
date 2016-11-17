@@ -22,7 +22,6 @@ string logparser::readline ( ifstream& filehandle ) {
 logparser::parser::parser()		{
     regexers.insert ( {"switchname",regex{"(?:MSCi +)(\\w+)(?: +)(\\d{4}-\\d{2}-\\d{2} +\\d{2}\\:\\d{2}\\:\\d{2})"}} );
     regexers.insert ( {"cell_2g",regex{"(?:^ +)(\\w+)(?: +\\d+ +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\w+)"}} );
-    regexers.insert ( {"rncid",regex{"(?:RNC IDENTIFICATION\\.+ RNCID \\.+ \\: )(\\d+)"}} );
     regexers.insert ( {"rncname",regex{"(?:RNC NAME\\.+ RNCNAME \\. \\: )(\\w+)"}} );
     regexers.insert ( {"rnc_sac",regex{"(\\d+)(?: +724 +)(\\d+)"}} );
     regexers.insert ( {"command_end",regex{"COMMAND +EXECUTED"}} );
@@ -33,6 +32,8 @@ logparser::parser::parser()		{
     triggers.insert ( {"cell_3g",regex{"SERVICE AREAS IN MSS CONCEPT \\:"}} );
     triggers.insert ( {"cell_2g",regex{"BTSs UNDER BSC \\:"}} );
     triggers.insert ( {"bscname",regex{"(?:BSC NAME )(?:\\.*)(?:\\(NAME\\)\\. \\:)(\\w+)"}} );
+    triggers.insert ( {"rncid",regex{"(?:RNC IDENTIFICATION\\.+ RNCID \\.+ \\: )(\\d+)"}} );
+    triggers.insert ( {"rnc_load_lac",regex{"(?:LA +NAME \\:LAC)(\\d+)(?: +LAC +\\: *)(\\d+)"}} );
 }
 logparser::parser::~parser()	{}
 void logparser::parser::slot_new_file ( const string& filename, const logtype& type_of_logger ) throw ( const domain_error& ) {
@@ -76,6 +77,7 @@ void logparser::parser::parse_switch(std::shared_ptr< ::mobswitch> work_switch, 
     bool t_bsc(false), t_rnc(false), t_cell2g(false), t_cell3g(false);
     vector<bsc>::iterator it_work_bsc;
     vector<rnc>::iterator it_work_rnc;
+    int work_lac_sac(-1);
     smatch matches;
     if (workfile.fail()) {
         cerr << "Não foi possível abrir o arquivo " << filename << "." << endl << "Abortando Arquivo." << endl;
@@ -108,22 +110,65 @@ void logparser::parser::parse_switch(std::shared_ptr< ::mobswitch> work_switch, 
         }
         if (regex_search(linha,matches,triggers.at("cell_2g"))) {
             if (!t_bsc) throw (runtime_error("Começaram celulas 2g sem descobrir uma bsc. Travando em 3, 2, 1..."));
+            t_cell3g=t_rnc=false;
             t_cell2g=true;
             continue;
+        }
+        if(regex_search(linha,matches,triggers.at("rnc_load_lac"))) {
+            t_cell2g=t_bsc=t_rnc=false;
+            work_lac_sac=stoi(matches[1]);
+        }
+        if(regex_search(linha,matches,triggers.at("cell_3g"))) {
+            if (work_lac_sac < 0) throw(runtime_error("Começaram celulas 3g sem que fosse possível descobrir o SAC. Travando em 3, 2, 1..."));
+            t_cell2g=t_bsc=t_rnc=false;
+            t_cell3g=true;
+            continue;
+        }
+        if (regex_search(linha,matches,triggers.at("rncid"))) {
+            t_bsc=t_cell2g=t_cell3g=false;
+            //it_work_bsc=nullptr; TODO See if something like this is really necessary
+            t_rnc=true;
+            rnc n_rnc;
+            n_rnc.set_id(matches[1]);
+            it_work_rnc=work_switch->add_rnc(n_rnc);
         }
         //From this point on we grab the available information
         if (t_cell2g) {
             if (regex_search(linha,matches,regexers.at("cell_2g"))) {
-                //TODO Continuer
+                celula n_celula;
+                n_celula.set_name(matches[1]);
+                n_celula.set_cgi(matches[3],matches[4],matches[2],matches[5]);
+                n_celula.set_status(matches[6]);
+                it_work_bsc->add_celula(n_celula);
+                continue;
+            }
+        }
+        if (t_rnc) {
+            if (regex_search(linha,matches,regexers.at("rncname"))) {
+                it_work_rnc->set_name(matches[1]);
+                continue;
+            }
+            if (regex_search(linha,matches,regexers.at("rnc_sac"))) {
+                it_work_rnc->add_lac_sac(matches[1]);
+                it_work_rnc->set_mnc(matches[2]);
+                continue;
+            }
+        }
+        if (t_cell3g) {
+            if (regex_search(linha,matches,regexers.at("cell_3g"))) {
+                celula n_celula;
+                n_celula.set_name(matches[1]);
+                n_celula.set_mcc(724);
+                n_celula.set_mnc(it_work_rnc->get_mnc());
+                n_celula.set_lac_sac(work_lac_sac);
+                n_celula.set_cid(stoi(matches[2]));
+                n_celula.set_status(matches[3]);
+                it_work_rnc->add_celula(n_celula);
+                continue;
             }
         }
     }
 }
 void logparser::parser::parse_mme(std::shared_ptr< ::mme>, const string& filename) {
 }
-
-
-
-
-
 

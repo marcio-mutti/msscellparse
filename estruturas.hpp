@@ -13,6 +13,7 @@ public:
   const bool operator<(const celula&) const;
   const bool operator == (const celula&) const;
   void set_cgi(const int&, const int&, const int&, const int&);
+  void set_cgi(const std::string&, const std::string&, const std::string&, const std::string&);
   void set_name(const std::string&);
   void set_mcc(const int&);
   void set_mnc(const int&);
@@ -35,7 +36,7 @@ class controller {
 
 public:
   controller();
-  ~controller();
+  virtual ~controller();
   const bool has_lac_sac(const int&) const;
   std::vector<celula>::iterator add_celula(const celula&);
   std::vector<celula>::iterator find_celula(const celula&);
@@ -43,10 +44,14 @@ public:
   const std::string get_name() const;
   void set_name(const std::string&);
   void add_lac_sac(const int&);
+  void add_lac_sac(const std::string&);
   const bool operator==(const controller&) const;
+  void set_mnc(const int&);
+  const int get_mnc() const;
 
 protected:
   std::string name;
+  int mnc;
   std::vector<celula> lista_de_celulas;
   std::set<int> lista_de_lacs_sacs;
 };
@@ -56,7 +61,11 @@ class bsc : public controller {
 };
 
 class rnc : public controller {
-  
+public:
+    void set_id(const std::string&);
+    void set_mnc(const std::string&);
+protected:
+    int id;
 };
 
 class mobswitch {

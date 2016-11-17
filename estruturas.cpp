@@ -21,6 +21,9 @@ const bool celula::operator==(const celula& oth) const {
 void celula::set_cgi(const int& mcc_, const int& mnc_, const int& lac_sac_, const int& cid_) {
 	mcc=mcc_;mnc=mnc_;lac_sac=lac_sac_;cid=cid_;
 }
+void celula::set_cgi(const string& mcc_, const string& mnc_, const string& lac_sac_, const string& cid_) {
+	set_cgi(stoi(mcc_),stoi(mnc_),stoi(lac_sac_),stoi(cid_));
+}
 void celula::set_name(const std::string& name_)     { name=name_;}
 void celula::set_mcc(const int& mcc_)               { mcc=mcc_; }
 void celula::set_mnc(const int& mnc_)               { mnc=mnc_; }
@@ -55,30 +58,32 @@ const bool controller::operator==(const controller& oth) const { return name==ot
 const bool controller::has_celula(const celula& celula_) {
 	return !(lista_de_celulas.end() == find_celula(celula_));
 }
-const string controller::get_name() const           { return name; }
-void controller::set_name(const string& name_)      { name=name_; }
-void controller::add_lac_sac(const int& lac_sac_)   { lista_de_lacs_sacs.insert(lac_sac_); }
-
+const string controller::get_name() const               { return name; }
+void controller::set_name(const string& name_)          { name=name_; }
+void controller::add_lac_sac(const int& lac_sac_)       { lista_de_lacs_sacs.insert(lac_sac_); }
+void controller::add_lac_sac(const string& lac_sac_)    { add_lac_sac(stoi(lac_sac_)); }
+void controller::set_mnc ( const int& mnc_)             { mnc=mnc_; }
+const int controller::get_mnc() const                   { return mnc; }
 
 //Metodos relacionados a BSCs
 
 
 
 //Metodos relacionados a RNCs
-
-
+void rnc::set_id(const std::string& id_)                { id=stoi(id_); }
+void rnc::set_mnc(const string& mnc_)                   { controller::set_mnc(stoi(mnc_)); }
 
 //Metodos relacionados a mobswitches
 mobswitch::mobswitch() {}
 mobswitch::~mobswitch() {}
-void mobswitch::set_name(const string& name_)				{ name=name_; }
+void mobswitch::set_name(const string& name_)           { name=name_; }
 vector<bsc>::iterator mobswitch::add_bsc(const bsc& bsc_) {
-    vector<bsc>::iterator result(find(lista_de_bscs.begin(),lista_de_bscs.end(),bsc_.get_name()));
+    vector<bsc>::iterator result(find(lista_de_bscs.begin(),lista_de_bscs.end(),bsc_));
     if (result != lista_de_bscs.end()) return result;
     return lista_de_bscs.insert(lista_de_bscs.end(),bsc_);
 }
 vector<rnc>::iterator mobswitch::add_rnc(const rnc& rnc_) {
-    vector<rnc>::iterator result(find(lista_de_rncs.begin(),lista_de_rncs.end(),rnc_.get_name()));
+    vector<rnc>::iterator result(find(lista_de_rncs.begin(),lista_de_rncs.end(),rnc_));
     if (result != lista_de_rncs.end()) return result;
     return lista_de_rncs.insert(lista_de_rncs.end(),rnc_);
 }
