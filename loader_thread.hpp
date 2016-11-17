@@ -34,8 +34,10 @@ protected:
     std::vector<std::string> lista_de_mobswitches;
     std::vector<std::string> lista_de_mmes;
     std::map<std::string, std::shared_ptr<boost::thread>> threads_de_execucao;
-    std::map<boost::thread::id, std::shared_ptr<::mobswitch>> working_switches;
-    std::map<boost::thread::id, std::shared_ptr<::mme>> working_mmes;
+    //std::map<boost::thread::id, std::shared_ptr<::mobswitch>> working_switches;
+    //std::map<boost::thread::id, std::shared_ptr<::mme>> working_mmes;
+    std::vector<std::shared_ptr<::mobswitch>> working_switches;
+    std::vector<std::shared_ptr<::mme>> working_mmes;
     std::map<std::string, std::regex> triggers;
     std::map<std::string, std::regex> regexers;
     //Signals
