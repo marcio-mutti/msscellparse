@@ -1,6 +1,7 @@
 #ifndef JANELA_PRINCIPAL
 #define JANELA_PRINCIPAL
 
+#include <memory>
 #include <gtkmm-3.0/gtkmm.h>
 #include <boost/thread.hpp>
 
@@ -28,7 +29,7 @@ protected:
     void slot_ready_for_new_work();
     // Variables
     logparser::parser runner;
-    boost::thread work_thread;
+    std::shared_ptr<boost::thread> work_thread;
 };
 
 

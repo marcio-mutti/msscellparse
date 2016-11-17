@@ -74,7 +74,7 @@ void logparser::parser::slot_run() throw ( const runtime_error& ) {
     }
     lista_de_mobswitches.clear();
     lista_de_mmes.clear();
-    signal_work_finish_.emit();
+    //signal_work_finish_.emit();
     boost::this_thread::sleep_for(boost::chrono::milliseconds(400));
 }
 

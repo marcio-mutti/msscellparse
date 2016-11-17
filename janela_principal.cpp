@@ -71,7 +71,9 @@ void janela_principal::slot_btn_load_4g() {
 void janela_principal::slot_btn_carregar() {
     btn_load_23g->set_sensitive(false);
     btn_carregar->set_label("Cancelar");
-    work_thread=boost::thread(boost::bind(&logparser::parser::slot_run,&runner));
+    //work_thread=make_shared<boost::thread>(boost::thread(boost::bind(&logparser::parser::slot_run,&runner)));
+    work_thread=make_shared<boost::thread>(boost::bind(&logparser::parser::slot_run,&runner));
+    //runner.slot_run();
 }
 void janela_principal::slot_btn_subir_banco() {
 }
