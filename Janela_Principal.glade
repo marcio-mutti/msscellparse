@@ -435,5 +435,34 @@
         <property name="position">2</property>
       </packing>
     </child>
+    <child>
+      <object class="GtkStatusbar" id="sts_bar">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="tooltip_text" translatable="yes">Elementos de rede sendo transferidos.</property>
+        <property name="margin_left">10</property>
+        <property name="margin_right">10</property>
+        <property name="margin_start">10</property>
+        <property name="margin_end">10</property>
+        <property name="spacing">1</property>
+        <property name="baseline_position">bottom</property>
+        <child>
+          <object class="GtkSpinner" id="sts_spin">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">3</property>
+      </packing>
+    </child>
   </object>
 </interface>

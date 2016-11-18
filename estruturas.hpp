@@ -7,88 +7,96 @@
 
 class celula {
 
-public:
-  celula();
-  ~celula();
-  const bool operator<(const celula&) const;
-  const bool operator == (const celula&) const;
-  void set_cgi(const int&, const int&, const int&, const int&);
-  void set_cgi(const std::string&, const std::string&, const std::string&, const std::string&);
-  void set_name(const std::string&);
-  void set_mcc(const int&);
-  void set_mnc(const int&);
-  void set_lac_sac(const int&);
-  void set_cid(const int&);
-  void set_status(const std::string&);
-  const std::string get_name() const;
-  const int get_mcc() const;
-  const int get_mnc() const;
-  const int get_lac_sac() const;
-  const int get_cid() const;
-  const std::string get_status() const;
+  public:
+    celula();
+    ~celula();
+    bool operator<(const celula&) const;
+    bool operator == (const celula&) const;
+    void set_cgi(const int&, const int&, const int&, const int&);
+    void set_cgi(const std::string&, const std::string&, const std::string&, const std::string&);
+    void set_name(const std::string&);
+    void set_mcc(const int&);
+    void set_mnc(const int&);
+    void set_lac_sac(const int&);
+    void set_cid(const int&);
+    void set_status(const std::string&);
+    const std::string get_name() const;
+    std::string get_mcc() const;
+    std::string get_mnc() const;
+    std::string get_lac_sac() const;
+    std::string get_cid() const;
+    const std::string get_status() const;
 
-protected:
-  int mcc, mnc, lac_sac, cid;
-  std::string name, status;
+  protected:
+    int mcc, mnc, lac_sac, cid;
+    std::string name, status;
 };
 
 class controller {
 
-public:
-  controller();
-  virtual ~controller();
-  const bool has_lac_sac(const int&) const;
-  std::vector<celula>::iterator add_celula(const celula&);
-  std::vector<celula>::iterator find_celula(const celula&);
-  const bool has_celula(const celula&);
-  const std::string get_name() const;
-  void set_name(const std::string&);
-  void add_lac_sac(const int&);
-  void add_lac_sac(const std::string&);
-  const bool operator==(const controller&) const;
-  void set_mnc(const int&);
-  const int get_mnc() const;
+  public:
+    controller();
+    virtual ~controller();
+    bool has_lac_sac(const int&) const;
+    std::vector<celula>::iterator add_celula(const celula&);
+    std::vector<celula>::iterator find_celula(const celula&);
+    std::vector<celula>::const_iterator cell_begin() const;
+    std::vector<celula>::const_iterator cell_end() const;
+    bool has_celula(const celula&);
+    const std::string get_name() const;
+    void set_name(const std::string&);
+    void add_lac_sac(const int&);
+    void add_lac_sac(const std::string&);
+    bool operator==(const controller&) const;
+    void set_mnc(const int&);
+    int get_mnc() const;
 
-protected:
-  std::string name;
-  int mnc;
-  std::vector<celula> lista_de_celulas;
-  std::set<int> lista_de_lacs_sacs;
+  protected:
+    std::string name;
+    int mnc;
+    std::vector<celula> lista_de_celulas;
+    std::set<int> lista_de_lacs_sacs;
 };
 
 class bsc : public controller {
-  
+
 };
 
 class rnc : public controller {
-public:
+  public:
     void set_id(const std::string&);
     void set_mnc(const std::string&);
-protected:
+  protected:
     int id;
 };
 
 class mobswitch {
 
-public:
-  mobswitch();
-  ~mobswitch();
-  void set_name(const std::string&);
-  std::vector<bsc>::iterator add_bsc(const bsc&);
-  std::vector<rnc>::iterator add_rnc(const rnc&);
-  std::vector<bsc>::iterator find_bsc_by_name(const std::string&);
-  std::vector<rnc>::iterator find_rnc_by_name(const std::string&);
-  std::vector<rnc>::iterator find_rnc_by_sac(const int&);
-  const bool has_sac(const int&);
+  public:
+    mobswitch();
+    ~mobswitch();
+    void set_name(const std::string&);
+    std::string get_name() const;
+    std::vector<bsc>::iterator add_bsc(const bsc&);
+    std::vector<rnc>::iterator add_rnc(const rnc&);
+    std::vector<bsc>::iterator find_bsc_by_name(const std::string&);
+    std::vector<rnc>::iterator find_rnc_by_name(const std::string&);
+    std::vector<rnc>::iterator find_rnc_by_sac(const int&);
+    std::vector<bsc>::const_iterator bsc_begin() const;
+    std::vector<bsc>::const_iterator bsc_end() const;
+    std::vector<rnc>::const_iterator rnc_begin() const;
+    std::vector<rnc>::const_iterator rnc_end() const;
+    bool has_sac(const int&);
+    size_t get_number_bscs() const;
+    size_t get_number_rncs() const;
 
-protected:
-  std::string name;
-  std::vector<bsc> lista_de_bscs;
-  std::vector<rnc> lista_de_rncs;
+  protected:
+    std::string name;
+    std::vector<bsc> lista_de_bscs;
+    std::vector<rnc> lista_de_rncs;
 };
 
 class mme {
-    
+
 };
 #endif
-
