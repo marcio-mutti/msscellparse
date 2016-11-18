@@ -39,6 +39,7 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     signal_new_file.connect ( sigc::mem_fun ( runner, &logparser::parser::slot_new_file ) );
     runner.signal_n_of_mobswitches().connect(sigc::mem_fun(*this, &janela_principal::slot_change_n_mobswitch));
     runner.signal_work_finish().connect(sigc::mem_fun(*this,&janela_principal::slot_ready_for_new_work));
+    runner.signal_n_of_mobswitches_ready().connect ( sigc::mem_fun(*this,&janela_principal::slot_readied_switches) );
     //box_principal->show_all_children();
     show_all_children();
 }
@@ -72,7 +73,8 @@ void janela_principal::slot_btn_carregar() {
     btn_load_23g->set_sensitive(false);
     btn_carregar->set_label("Cancelar");
     //work_thread=make_shared<boost::thread>(boost::thread(boost::bind(&logparser::parser::slot_run,&runner)));
-    work_thread=make_shared<boost::thread>(boost::bind(&logparser::parser::slot_run,&runner));
+    //work_thread=make_shared<boost::thread>(boost::bind(&logparser::parser::slot_run,&runner));
+    work_thread=boost::thread([&](){ runner.slot_run(); });
     //runner.slot_run();
 }
 void janela_principal::slot_btn_subir_banco() {
@@ -82,8 +84,13 @@ void janela_principal::slot_change_n_mobswitch(const string& n_value) {
 }
 void janela_principal::slot_ready_for_new_work(){
     btn_load_23g->set_sensitive(true);
+    lbl_n_23g->set_text("0");
     btn_carregar->set_label("Carregar Arquivos");
     //while (Gtk::Main::events_pending()) Gtk::Main::iteration();
+    //DEBUG
+    
 }
+void janela_principal::slot_readied_switches(const std::string& n_value) { lbl_n_central->set_text(n_value); }
+
 
 

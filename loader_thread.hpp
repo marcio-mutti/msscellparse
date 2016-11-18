@@ -17,6 +17,8 @@
 namespace logparser {
 enum logtype { mobswitch, mme };
 std::string readline ( std::ifstream& );
+void parse_switch(std::shared_ptr<::mobswitch>, const std::string&, const std::map<std::string,std::regex>&,const std::map<std::string,std::regex>&);
+void parse_mme(std::shared_ptr<::mme>, const std::string&, const std::map<std::string,std::regex>&,const std::map<std::string,std::regex>&);
 class parser : public sigc::trackable {
 public:
     parser();
@@ -24,6 +26,7 @@ public:
     //Methods
     sigc::signal<void, const std::string&> signal_n_of_mobswitches();
     sigc::signal<void> signal_work_finish();
+    sigc::signal<void, const std::string&> signal_n_of_mobswitches_ready();
     // Slots
     void slot_new_file ( const std::string&, const logtype& ) throw ( const std::domain_error& );
     void slot_run() throw ( const std::runtime_error& );
@@ -44,9 +47,10 @@ protected:
     sigc::signal<void, const std::string&> signal_new_logger;
     sigc::signal<void, const std::string&> signal_n_of_mobswitches_;
     sigc::signal<void> signal_work_finish_;
+    sigc::signal<void, const std::string&> signal_n_of_mobswitches_ready_;
     //Methods
-    void parse_switch(std::shared_ptr<::mobswitch>,const std::string&);
-    void parse_mme(std::shared_ptr<::mme>, const std::string&);
+    //void parse_switch(std::shared_ptr<::mobswitch>,const std::string&);
+    //void parse_mme(std::shared_ptr<::mme>, const std::string&);
     
 };
 

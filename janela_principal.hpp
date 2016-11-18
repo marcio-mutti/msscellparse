@@ -27,9 +27,11 @@ protected:
     void slot_btn_subir_banco();
     void slot_change_n_mobswitch(const std::string&);
     void slot_ready_for_new_work();
+    void slot_readied_switches(const std::string&);
     // Variables
     logparser::parser runner;
-    std::shared_ptr<boost::thread> work_thread;
+    //std::shared_ptr<boost::thread> work_thread;
+    boost::thread work_thread;
 };
 
 
