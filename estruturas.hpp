@@ -50,6 +50,7 @@ class controller {
     bool operator==(const controller&) const;
     void set_mnc(const int&);
     int get_mnc() const;
+    void operator+=(const controller&);
 
   protected:
     std::string name;
@@ -87,6 +88,7 @@ class mobswitch {
     std::vector<rnc>::const_iterator rnc_begin() const;
     std::vector<rnc>::const_iterator rnc_end() const;
     bool has_sac(const int&);
+    void operator+=(const mobswitch&);
     size_t get_number_bscs() const;
     size_t get_number_rncs() const;
 

@@ -7,13 +7,12 @@ using namespace std;
 janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nullptr ),
     lbl_n_23g ( nullptr ), lbl_n_4g ( nullptr ), lbl_n_central ( nullptr ), lbl_n_bsc ( nullptr ),
     lbl_n_rnc ( nullptr ), lbl_n_mme ( nullptr ), lbl_n_central_up ( nullptr ),
-    lbl_n_bsc_up ( nullptr ),
-    lbl_n_rnc_up ( nullptr ), lbl_n_mme_up ( nullptr ), btn_load_23g ( nullptr ),
-    btn_load_4g ( nullptr ),
-    btn_carregar ( nullptr ), btn_subir_banco ( nullptr ), sts_bar(nullptr), sts_spin(nullptr),
+    lbl_n_bsc_up ( nullptr ), lbl_n_rnc_up ( nullptr ), lbl_n_mme_up ( nullptr ),
+    btn_load_23g ( nullptr ), btn_load_4g ( nullptr ), btn_carregar ( nullptr ),
+    btn_subir_banco ( nullptr ), btn_db_clean(nullptr), sts_bar(nullptr), sts_spin(nullptr),
     work_thread() {
     try {
-        janelator = Gtk::Builder::create_from_file ( "../msscellparse/Janela_Principal.glade" );
+        janelator = Gtk::Builder::create_from_file ( "../Janela_Principal.glade" );
     } catch ( const Glib::FileError& error ) {
         cerr <<  "Encontrado um erro na tentativa de abrir o arquivo de definição da UI:" <<  endl;
         cerr <<  error.what() << endl <<   "Error code: " <<  error.code() <<  endl;
@@ -36,6 +35,7 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     janelator->get_widget ( "btn_load_4g", btn_load_4g );
     janelator->get_widget ( "btn_carregar", btn_carregar );
     janelator->get_widget ( "btn_subir_banco", btn_subir_banco );
+    janelator->get_widget ( "btn_db_clean", btn_db_clean);
     janelator->get_widget ( "sts_bar", sts_bar );
     janelator->get_widget ( "sts_spin", sts_spin );
     this->add ( *box_principal );
@@ -48,6 +48,7 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
             &janela_principal::slot_btn_carregar ) );
     btn_subir_banco->signal_clicked().connect ( sigc::mem_fun ( *this,
             &janela_principal::slot_btn_subir_banco ) );
+    btn_db_clean->signal_clicked().connect(sigc::mem_fun(*this,&janela_principal::slot_db_cleaner));
     signal_new_file.connect ( sigc::mem_fun ( runner, &logparser::parser::slot_new_file ) );
     runner.signal_n_of_mobswitches().connect(sigc::mem_fun(*this,
             &janela_principal::slot_change_n_mobswitch));
@@ -150,4 +151,15 @@ string janela_principal::slot_open_connect_string_file() {
 void janela_principal::slot_db_working_node(std::string node) {
     sts_bar->push("Uploading: "+node);
     while (Gtk::Main::events_pending()) Gtk::Main::iteration();
+}
+
+void janela_principal::slot_db_cleaner()
+{
+    Gtk::MessageDialog dialogo(*this, "Esta ação removerá todos os dados de topologia re"
+                               "ferentes a esta aplicação do banco. Confirma a operação?",
+                               false,Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO);
+    int resposta=dialogo.run();
+    while (Gtk::Main::events_pending()) Gtk::Main::iteration();
+    if (resposta == Gtk::RESPONSE_NO) return;
+    runner.clean_database();
 }

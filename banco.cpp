@@ -107,6 +107,8 @@ void pgsql::db_connection::connect_to_database() noexcept(false) {
     keywords[n] = 0;
     parameters[n] = 0;
     dbconn = PQconnectdbParams(keywords, parameters, 0);
+    delete[] keywords;
+    delete[] parameters;
     if (PQstatus(dbconn) != CONNECTION_OK) {
         PQfinish(dbconn);
         dbconn = nullptr;

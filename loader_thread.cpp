@@ -40,6 +40,15 @@ logparser::parser::parser() {
     triggers.insert( {"rnc_load_lac",regex{"(?:LA +NAME \\:LAC)(\\d+)(?: +LAC +\\: *)(\\d+)"}});
 }
 logparser::parser::~parser() {}
+
+void logparser::parser::clean_database()
+{
+    db_interface.execute_command("drop table carrier.mobswitch cascade");
+    db_interface.execute_command("drop table carrier.controller cascade");
+    db_interface.execute_command("drop table carrier.relate_cont_switch cascade");
+    db_interface.execute_command("drop table carrier.cells cascade");
+    db_interface.execute_command("drop table carrier.relate_cells_controller cascade");
+}
 void logparser::parser::slot_new_file(
     const string &filename,
     const logtype &type_of_logger) noexcept(false) {

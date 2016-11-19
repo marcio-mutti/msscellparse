@@ -23,6 +23,8 @@ class parser : public sigc::trackable {
     parser();
     ~parser();
     //Methods
+    void clean_database();
+    //Signals
     sigc::signal<void, const std::string&> signal_n_of_mobswitches();
     sigc::signal<void> signal_work_finish();
     sigc::signal<void, const std::string&, const std::string&, const std::string&>

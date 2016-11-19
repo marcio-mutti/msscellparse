@@ -116,6 +116,14 @@ int controller::get_mnc() const                   {
     return mnc;
 }
 
+void controller::operator+=(const controller & oth)
+{
+    for (vector<celula>::const_iterator citer=oth.lista_de_celulas.cbegin();
+         citer!=lista_de_celulas.cend();++citer) {
+        add_celula(*citer);
+    }
+}
+
 //Metodos relacionados a BSCs
 
 
@@ -184,6 +192,20 @@ vector<rnc>::const_iterator mobswitch::rnc_end() const {
 }
 bool mobswitch::has_sac(const int& sac) {
     return (lista_de_rncs.end() != find_rnc_by_sac(sac));
+}
+
+void mobswitch::operator+=(const mobswitch &oth)
+{
+    for (vector<bsc>::const_iterator biter=oth.lista_de_bscs.cbegin();
+         biter!=lista_de_bscs.cend();++biter)
+    {
+        add_bsc(*biter);
+    }
+    for (vector<rnc>::const_iterator riter=oth.lista_de_rncs.cbegin();
+         riter!=lista_de_rncs.cend();++riter)
+    {
+        add_rnc(*riter);
+    }
 }
 size_t mobswitch::get_number_bscs() const {
     return lista_de_bscs.size();
