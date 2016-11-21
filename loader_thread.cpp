@@ -222,9 +222,9 @@ void logparser::parser::parse_switch(std::shared_ptr<::mobswitch> work_switch,
         }
         if (regex_search(linha, matches, triggers.at("cell_3g"))) {
             if (work_lac_sac < 0) {
-                string message("Começaram celulas 3g sem que fosse possível descobrir o SAC.\nCélula: ");
+                string message("Começaram celulas 3g sem que fosse possível descobrir o SAC.\nCélula: ");//FIXME Problems with false positives.
                 message += matches[1];
-                throw(runtime_error(message));
+                //throw(runtime_error(message));
             }
             t_cell2g = t_bsc = t_rnc = false;
             t_cell3g = true;
