@@ -41,13 +41,33 @@ logparser::parser::parser() {
 }
 logparser::parser::~parser() {}
 
-void logparser::parser::clean_database()
-{
-    db_interface.execute_command("drop table carrier.mobswitch cascade");
-    db_interface.execute_command("drop table carrier.controller cascade");
-    db_interface.execute_command("drop table carrier.relate_cont_switch cascade");
-    db_interface.execute_command("drop table carrier.cells cascade");
-    db_interface.execute_command("drop table carrier.relate_cells_controller cascade");
+void logparser::parser::clean_database() {
+    if (!db_interface.connection_up()) {
+        string configuration_file=signal_ask_for_connect_string_file_.emit();
+        statements.clear();
+        db_interface.load_database_config(configuration_file);
+        try {
+            db_interface.connect_to_database();
+        } catch (const runtime_error& erro) {
+            cerr << erro.what() << endl;
+            return;
+        }
+    }
+    try {
+        db_interface.execute_command("drop table if exists carrier.mobswitch cascade");
+        db_interface.execute_command("drop table if exists carrier.controller cascade");
+        db_interface.execute_command("drop table if exists carrier.relate_cont_switch cascade");
+        db_interface.execute_command("drop table if exists carrier.cells cascade");
+        db_interface.execute_command("drop table if exists carrier.relate_cells_controller cascade");
+        db_interface.execute_command("drop sequence if exists carrier.cells_id_seq");
+        db_interface.execute_command("drop sequence if exists carrier.controller_id_seq");
+        db_interface.execute_command("drop sequence if exists carrier.mobswitch_id_seq");
+        db_interface.execute_command("drop sequence if exists carrier.relate_cells_controller_id_seq");
+        db_interface.execute_command("drop sequence if exists carrier.cont_switch_id_seq");
+    } catch (const runtime_error& erro) {
+        cerr << erro.what() << endl;
+    }
+
 }
 void logparser::parser::slot_new_file(
     const string &filename,
@@ -88,10 +108,11 @@ sigc::signal<void, string> logparser::parser::signal_send_upload_node() {
 
 void logparser::parser::slot_run() noexcept(false) {
     size_t n_bsc(0), n_rnc(0);
+    vector<shared_ptr<::mobswitch>> temporary_mobswitches;
     for (vector<string>::iterator siter = lista_de_mobswitches.begin();
             siter != lista_de_mobswitches.end(); ++siter) {
         shared_ptr<::mobswitch> work_switch = make_shared<::mobswitch>();
-        working_switches.push_back(work_switch);
+        temporary_mobswitches.push_back(work_switch);
         /*threads_de_execucao.insert({*siter, make_shared<boost::thread>([&]() {
             logparser::parse_switch(work_switch,
                                     cref(*siter),
@@ -101,7 +122,7 @@ void logparser::parser::slot_run() noexcept(false) {
         parse_switch(work_switch,cref(*siter));
         n_bsc+=work_switch->get_number_bscs();
         n_rnc+=work_switch->get_number_rncs();
-        signal_n_of_mobswitches_ready_.emit(to_string(working_switches.size()),to_string(n_bsc),
+        signal_n_of_mobswitches_ready_.emit(to_string(temporary_mobswitches.size()),to_string(n_bsc),
                                             to_string(n_rnc));
     }
     for (vector<string>::iterator miter = lista_de_mmes.begin();
@@ -116,6 +137,19 @@ void logparser::parser::slot_run() noexcept(false) {
                 threads_de_execucao.begin();
             titer != threads_de_execucao.end(); ++titer) {
         titer->second->join();
+    }
+    for (vector<shared_ptr<::mobswitch>>::iterator tmiter=temporary_mobswitches.begin();
+            tmiter!=temporary_mobswitches.end(); ++tmiter) {
+        vector<shared_ptr<::mobswitch>>::iterator miter=working_switches.end();
+        for (vector<shared_ptr<::mobswitch>>::iterator rmiter=working_switches.begin();
+                rmiter!=working_switches.end(); ++rmiter) {
+            if (*(rmiter->get()) == *(tmiter->get())) {
+                miter=rmiter;
+                break;
+            }
+        }
+        if (miter == working_switches.end()) working_switches.push_back(*tmiter);
+        else *(miter->get()) += *(tmiter->get());
     }
     lista_de_mobswitches.clear();
     lista_de_mmes.clear();
@@ -276,11 +310,23 @@ void logparser::parser::slot_upload_data() noexcept {
                                            "insert into carrier.controller (name, type) values ($1, $2) returning id",2);
             statements.insert("insert_controller");
         }
+        if (statements.count("find_inserted_controller") == 0) {
+            db_interface.prepare_statement("find_inserted_controller",
+                                           "select id from carrier.controller where name = $1",1);
+            statements.insert("find_inserted_controller");
+        }
         if (statements.count("insert_cell") == 0) {
             db_interface.prepare_statement("insert_cell",
                                            "insert into carrier.cells (name, mcc, mnc, lac, sac_cid, status) values($1, $2::integer, $3::integer, $4::integer, $5::integer, $6) on conflict do nothing returning id",
                                            6);
             statements.insert("insert_cell");
+        }
+        if (statements.count("find_inserted_cell") == 0) {
+            db_interface.prepare_statement("find_inserted_cell",
+                                           "select id from carrier.cells where mcc=$1::integer and mnc=$2::integer and lac=$3::integer and"
+                                           " sac_cid=$4::integer",
+                                           4);
+            statements.insert("find_inserted_cell");
         }
         if (statements.count("insert_relation_controller_switch") == 0) {
             db_interface.prepare_statement("insert_relation_controller_switch",
@@ -318,14 +364,27 @@ void logparser::parser::slot_upload_data() noexcept {
                 ++biter) {
             //We shall insert the bsc data and its relation with the switch
             signal_send_upload_node_.emit(biter->get_name());
-            work_result=db_interface.execute_returning_prepared_statement("insert_controller", {biter->get_name(),"BSC"});
-            id_controller=work_result.get_value(0,0);
+            try {
+                work_result=db_interface.execute_returning_prepared_statement("insert_controller", {biter->get_name(),"BSC"});
+                id_controller=work_result.get_value(0,0);
+            } catch (const runtime_error& erro) {
+                cerr << erro.what() << endl;
+                work_result=db_interface.execute_returning_prepared_statement("find_inserted_controller", {biter->get_name()});
+                id_controller=work_result.get_value(0,0);
+            }
+
             db_interface.execute_prepared_statement("insert_relation_controller_switch", {id_controller,id_switch});
             //Loop, and this time for the cells
             for (vector<celula>::const_iterator citer=biter->cell_begin(); citer!=biter->cell_end(); ++citer) {
                 //Insert cell data
-                work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
-                id_cell=work_result.get_value(0,0);
+                try {
+                    work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
+                    id_cell=work_result.get_value(0,0);
+                } catch (const runtime_error& erro) {
+                    cerr << erro.what() << endl;
+                    work_result=db_interface.execute_returning_prepared_statement("find_inserted_cell", {citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
+                    id_cell=work_result.get_value(0,0);
+                }
                 db_interface.execute_prepared_statement("insert_relation_cell_controller", {id_cell,id_controller});
             }
         }
@@ -334,16 +393,29 @@ void logparser::parser::slot_upload_data() noexcept {
                 ++riter) {
             //We shall insert the bsc data and its relation with the switch
             signal_send_upload_node_.emit(riter->get_name());
-            work_result=db_interface.execute_returning_prepared_statement("insert_controller", {riter->get_name(),"RNC"});
-            id_controller=work_result.get_value(0,0);
+            try {
+                work_result=db_interface.execute_returning_prepared_statement("insert_controller", {riter->get_name(),"RNC"});
+                id_controller=work_result.get_value(0,0);
+            } catch (const runtime_error& erro) {
+                cerr << erro.what() << endl;
+                work_result=db_interface.execute_returning_prepared_statement("find_inserted_controller", {riter->get_name()});
+                id_controller=work_result.get_value(0,0);
+            }
             db_interface.execute_prepared_statement("insert_relation_controller_switch", {id_controller,id_switch});
             //Loop, and this time for the cells
             for (vector<celula>::const_iterator citer=riter->cell_begin(); citer!=riter->cell_end(); ++citer) {
                 //Insert cell data
-                work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
-                id_cell=work_result.get_value(0,0);
+                try {
+                    work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
+                    id_cell=work_result.get_value(0,0);
+                } catch (const runtime_error& erro) {
+                    cerr << erro.what() << endl;
+                    work_result=db_interface.execute_returning_prepared_statement("find_inserted_cell", {citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
+                    id_cell=work_result.get_value(0,0);
+                }
                 db_interface.execute_prepared_statement("insert_relation_cell_controller", {id_cell,id_controller});
             }
         }
     }
+    signal_send_upload_node_.emit("Encerrado.");
 }

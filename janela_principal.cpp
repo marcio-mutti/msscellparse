@@ -12,7 +12,7 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     btn_subir_banco ( nullptr ), btn_db_clean(nullptr), sts_bar(nullptr), sts_spin(nullptr),
     work_thread() {
     try {
-        janelator = Gtk::Builder::create_from_file ( "../Janela_Principal.glade" );
+        janelator = Gtk::Builder::create_from_file ( "../msscellparse/Janela_Principal.glade" );
     } catch ( const Glib::FileError& error ) {
         cerr <<  "Encontrado um erro na tentativa de abrir o arquivo de definição da UI:" <<  endl;
         cerr <<  error.what() << endl <<   "Error code: " <<  error.code() <<  endl;
@@ -153,8 +153,7 @@ void janela_principal::slot_db_working_node(std::string node) {
     while (Gtk::Main::events_pending()) Gtk::Main::iteration();
 }
 
-void janela_principal::slot_db_cleaner()
-{
+void janela_principal::slot_db_cleaner() {
     Gtk::MessageDialog dialogo(*this, "Esta ação removerá todos os dados de topologia re"
                                "ferentes a esta aplicação do banco. Confirma a operação?",
                                false,Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO);

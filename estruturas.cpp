@@ -116,10 +116,9 @@ int controller::get_mnc() const                   {
     return mnc;
 }
 
-void controller::operator+=(const controller & oth)
-{
+void controller::operator+=(const controller & oth) {
     for (vector<celula>::const_iterator citer=oth.lista_de_celulas.cbegin();
-         citer!=lista_de_celulas.cend();++citer) {
+            citer!=lista_de_celulas.cend(); ++citer) {
         add_celula(*citer);
     }
 }
@@ -194,18 +193,26 @@ bool mobswitch::has_sac(const int& sac) {
     return (lista_de_rncs.end() != find_rnc_by_sac(sac));
 }
 
-void mobswitch::operator+=(const mobswitch &oth)
-{
-    for (vector<bsc>::const_iterator biter=oth.lista_de_bscs.cbegin();
-         biter!=lista_de_bscs.cend();++biter)
-    {
-        add_bsc(*biter);
-    }
-    for (vector<rnc>::const_iterator riter=oth.lista_de_rncs.cbegin();
-         riter!=lista_de_rncs.cend();++riter)
-    {
+void mobswitch::operator+=(const mobswitch &oth) {
+    if (oth.lista_de_bscs.size() > 0)
+        for (size_t i=0; i!=lista_de_bscs.size(); ++i)
+            add_bsc(oth.lista_de_bscs.at(i));
+    /*
+        for (vector<bsc>::const_iterator biter=oth.lista_de_bscs.cbegin();
+                biter!=lista_de_bscs.cend(); ++biter) {
+            add_bsc(*biter);
+        }*/
+    if (oth.lista_de_rncs.size() > 0)
+        for (size_t i = 0; i!=oth.lista_de_rncs.size(); ++i)
+            add_rnc(oth.lista_de_rncs.at(i));
+    /*for (vector<rnc>::const_iterator riter=oth.lista_de_rncs.cbegin();
+            riter!=lista_de_rncs.cend(); ++riter) {
         add_rnc(*riter);
-    }
+    }*/
+}
+
+bool mobswitch::operator==(const mobswitch &oth) const {
+    return name == oth.name;
 }
 size_t mobswitch::get_number_bscs() const {
     return lista_de_bscs.size();
@@ -213,7 +220,3 @@ size_t mobswitch::get_number_bscs() const {
 size_t mobswitch::get_number_rncs() const {
     return lista_de_rncs.size();
 }
-
-
-
-

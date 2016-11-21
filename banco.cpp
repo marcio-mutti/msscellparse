@@ -43,8 +43,10 @@ void pgsql::query_result::load_from_result(PGresult* result) noexcept(false) {
         error_message = PQresultErrorMessage(result);
         success_ = false;
     } else {
-        n_rows = PQntuples(result);
-        n_columns = PQnfields(result);
+        n_rows = static_cast<unsigned long int>(PQntuples(result));
+        n_columns = static_cast<unsigned long int>(PQnfields(result));
+        if (n_rows == 0)
+            throw(runtime_error("No result, althoug it should have."));
         for(size_t i = 0; i != n_columns; ++i) {
             column_names.push_back(PQfname(result, i));
         }
