@@ -206,8 +206,11 @@ void logparser::parser::parse_switch(std::shared_ptr<::mobswitch> work_switch,
             continue;
         }
         if (regex_search(linha, matches, triggers.at("cell_2g"))) {
-            if (!t_bsc)
-                throw(runtime_error("Começaram celulas 2g sem descobrir uma bsc. Travando em 3, 2, 1..."));
+            if (!t_bsc) {
+                string message("Começaram celulas 2g sem que fosse possível descobrir o SAC.\nCélula: ");
+                message += matches[1];
+                throw(runtime_error(message));
+            }
             t_cell3g = t_rnc = false;
             t_cell2g = true;
             continue;
@@ -218,8 +221,11 @@ void logparser::parser::parse_switch(std::shared_ptr<::mobswitch> work_switch,
             continue;
         }
         if (regex_search(linha, matches, triggers.at("cell_3g"))) {
-            if (work_lac_sac < 0)
-                throw(runtime_error("Começaram celulas 3g sem que fosse possível descobrir o SAC. Travando em 3, 2, 1..."));
+            if (work_lac_sac < 0) {
+                string message("Começaram celulas 3g sem que fosse possível descobrir o SAC.\nCélula: ");
+                message += matches[1];
+                throw(runtime_error(message));
+            }
             t_cell2g = t_bsc = t_rnc = false;
             t_cell3g = true;
             continue;
