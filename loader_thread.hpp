@@ -26,9 +26,11 @@ class parser : public sigc::trackable {
     void clean_database();
     //Signals
     sigc::signal<void, const std::string&> signal_n_of_mobswitches();
+    sigc::signal<void, const std::string&> signal_n_of_mmes();
     sigc::signal<void> signal_work_finish();
     sigc::signal<void, const std::string&, const std::string&, const std::string&>
     signal_n_of_mobswitches_ready();
+    sigc::signal<void,const std::string&> signal_n_of_mmes_ready();
     sigc::signal<std::string> signal_ask_for_connect_string_file();
     sigc::signal<void,std::string> signal_send_upload_node();
     // Slots
@@ -51,9 +53,11 @@ class parser : public sigc::trackable {
     //Signals
     sigc::signal<void, const std::string&> signal_new_logger;
     sigc::signal<void, const std::string&> signal_n_of_mobswitches_;
+    sigc::signal<void, const std::string&> signal_n_of_mmes_;
     sigc::signal<void> signal_work_finish_;
     sigc::signal<void, const std::string&, const std::string&, const std::string&>
     signal_n_of_mobswitches_ready_;
+    sigc::signal<void, const std::string&> signal_n_of_mmes_ready_;
     sigc::signal<std::string> signal_ask_for_connect_string_file_;
     sigc::signal<void,std::string> signal_send_upload_node_;
     //Methods

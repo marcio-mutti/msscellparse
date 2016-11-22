@@ -29,8 +29,10 @@ class janela_principal : public Gtk::ApplicationWindow {
     void slot_btn_carregar();
     void slot_btn_subir_banco();
     void slot_change_n_mobswitch(const std::string&);
+    void slot_change_n_mme(const std::string&);
     void slot_ready_for_new_work();
     void slot_readied_switches(const std::string&, const std::string&, const std::string&);
+    void slot_readied_mmes(const std::string&);
     void slot_db_working_node(std::string);
     void slot_db_cleaner();
     std::string slot_open_connect_string_file();

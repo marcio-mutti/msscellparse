@@ -24,6 +24,13 @@ string logparser::readline(ifstream &filehandle) {
 }
 
 logparser::parser::parser() {
+    triggers.insert( {"cell_3g", regex{"SERVICE AREAS IN MSS CONCEPT \\:"}});
+    triggers.insert( {"cell_2g", regex{"BTSs UNDER BSC \\:"}});
+    triggers.insert( {"bscname", regex{"(?:BSC NAME )(?:\\.*)(?:\\(NAME\\)\\. \\:)(\\w+)"}});
+    triggers.insert( {"rncid", regex{"(?:RNC IDENTIFICATION\\.+ RNCID \\.+ \\: )(\\d+)"}});
+    triggers.insert( {"rnc_load_lac",regex{"(?:LA +NAME \\:LAC)(\\d+)(?: +LAC +\\: *)(\\d+)"}});
+    triggers.insert( {"enodeb", regex{"ENB IN RADIO NETWORK"}} );
+    triggers.insert( {"enodeb_end", regex{"BROADCAST PLMN\\:"}} );
     regexers.insert( {"switchname", regex{"(?:MSCi +)(\\w+)(?: +)(\\d{4}-\\d{2}-\\d{2} +\\d{2}\\:\\d{2}\\:\\d{2})"}});
     regexers.insert( {"cell_2g", regex{"(?:^ +)(\\w+)(?: +\\d+ +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\w+)"}});
     regexers.insert( {"rncname", regex{"(?:RNC NAME\\.+ RNCNAME \\. \\: )(\\w+)"}});
@@ -33,11 +40,12 @@ logparser::parser::parser() {
     regexers.insert( {"enodeb_id",regex{"(?:ENB IDENTIFICATION\\.+\\(ENBID\\)\\.+ \\: )(\\d+)"}});
     regexers.insert( {"inodeb_ip", regex{"(?:ENB IP ADDRESS\\.+\\(ENBIP\\)\\.+ \\: )(\\d+\\.\\d+\\.\\d+\\.\\d+)"}});
     regexers.insert( {"tac", regex{"(?:TRACKING AREA CODE\\.+\\(TAC#1 \\)\\.+ \\: )(\\d+)"}});
-    triggers.insert( {"cell_3g", regex{"SERVICE AREAS IN MSS CONCEPT \\:"}});
-    triggers.insert( {"cell_2g", regex{"BTSs UNDER BSC \\:"}});
-    triggers.insert( {"bscname", regex{"(?:BSC NAME )(?:\\.*)(?:\\(NAME\\)\\. \\:)(\\w+)"}});
-    triggers.insert( {"rncid", regex{"(?:RNC IDENTIFICATION\\.+ RNCID \\.+ \\: )(\\d+)"}});
-    triggers.insert( {"rnc_load_lac",regex{"(?:LA +NAME \\:LAC)(\\d+)(?: +LAC +\\: *)(\\d+)"}});
+    regexers.insert( {"enb_mcc", regex{"(?:MOBILE COUNTRY CODE\\.+\\(MCC\\)\\.+ \\: )(\\d+)"}} );
+    regexers.insert( {"enb_mnc", regex{"(?:MOBILE NETWORK CODE\\.+\\(MNC\\)\\.+ \\: )(\\d+)"}} );
+    regexers.insert( {"enb_id", regex{"(?:ENB IDENTIFICATION\\.+\\(\\ENBID\\)\\.+ \\: )(\\d+)"}} );
+    regexers.insert( {"enb_ip",regex{"(?:ENB IP ADDRESS\\.+\\(ENBIP\\)\\.+ \\: )(\\d+\\.\\d+\\.\\d+\\.\\d+)"}} );
+    regexers.insert( {"enb_s1ca", regex{"(?:S1 CONNECTION AMOUNT\\.+\\(S1CA\\)\\.+ \\: )(\\d+)"}} );
+    regexers.insert( {"enb_tac", regex{"(?:TRACKING AREA CODE\\.+\\(TAC.. *\\)\\.* \\: )(\\d+)"}} );
 }
 logparser::parser::~parser() {}
 
@@ -85,10 +93,15 @@ void logparser::parser::slot_new_file(
         throw(domain_error(message));
     }
     signal_n_of_mobswitches_.emit(to_string(lista_de_mobswitches.size()));
+    signal_n_of_mmes_.emit(to_string(lista_de_mmes.size()));
 }
 sigc::signal<void, const string &>
 logparser::parser::signal_n_of_mobswitches() {
     return signal_n_of_mobswitches_;
+}
+
+sigc::signal<void, const string &> logparser::parser::signal_n_of_mmes() {
+    return signal_n_of_mmes_;
 }
 sigc::signal<void> logparser::parser::signal_work_finish() {
     return signal_work_finish_;
@@ -96,6 +109,10 @@ sigc::signal<void> logparser::parser::signal_work_finish() {
 sigc::signal<void, const string &, const string&, const string&>
 logparser::parser::signal_n_of_mobswitches_ready() {
     return signal_n_of_mobswitches_ready_;
+}
+
+sigc::signal<void, const string &> logparser::parser::signal_n_of_mmes_ready() {
+    return signal_n_of_mmes_ready_;
 }
 
 sigc::signal<string> logparser::parser::signal_ask_for_connect_string_file() {
@@ -109,6 +126,7 @@ sigc::signal<void, string> logparser::parser::signal_send_upload_node() {
 void logparser::parser::slot_run() noexcept(false) {
     size_t n_bsc(0), n_rnc(0);
     vector<shared_ptr<::mobswitch>> temporary_mobswitches;
+    vector<shared_ptr<::mme>> temporary_mmes;
     for (vector<string>::iterator siter = lista_de_mobswitches.begin();
             siter != lista_de_mobswitches.end(); ++siter) {
         shared_ptr<::mobswitch> work_switch = make_shared<::mobswitch>();
@@ -125,10 +143,13 @@ void logparser::parser::slot_run() noexcept(false) {
         signal_n_of_mobswitches_ready_.emit(to_string(temporary_mobswitches.size()),to_string(n_bsc),
                                             to_string(n_rnc));
     }
-    for (vector<string>::iterator miter = lista_de_mmes.begin();
-            miter != lista_de_mmes.end(); ++miter) {
+    for (vector<string>::const_iterator miter = lista_de_mmes.cbegin();
+            miter != lista_de_mmes.cend(); ++miter) {
         shared_ptr<::mme> work_mme = make_shared<::mme>();
-        working_mmes.push_back(work_mme);
+        temporary_mmes.push_back(work_mme);
+        parse_mme(work_mme,*miter);
+        signal_n_of_mmes_.emit(to_string(temporary_mmes.size()));
+
         // threads_de_execucao.insert({*miter,make_shared<boost::thread>([&](){parse_mme(work_mme,cref(*miter));})});
         // //TODO Tem de preparar a função para lidar com as mmes
         // parse_switch(work_switch,switch_filename);
@@ -278,7 +299,52 @@ void logparser::parser::parse_switch(std::shared_ptr<::mobswitch> work_switch,
     }
     workfile.close();
 }
-void logparser::parser::parse_mme(std::shared_ptr<::mme>, const string &filename) {}
+void logparser::parser::parse_mme(std::shared_ptr<::mme> work_mme, const string &filename) {
+    ifstream file(filename,ios_base::in);
+    bool n_enb(false);
+    smatch matches;
+    vector<enodeb>::iterator it_enb;
+    while (file.good()) {
+        string linha(readline(file));
+        if (regex_search(linha,matches,triggers.at("enodeb_end"))) {
+            n_enb=false;
+            continue;
+        }
+        if (regex_search(linha,matches,triggers.at("enodeb"))) {
+            n_enb=true;
+            continue;
+        }
+        if (n_enb) {
+            if (regex_search(linha,matches,regexers.at("enb_mcc"))) {
+                enodeb n_enb;
+                n_enb.set_mcc(matches[1]);
+                it_enb=work_mme->add_enodeb(n_enb);
+                continue;
+            }
+            if (regex_search(linha,matches,regexers.at("enb_mnc"))) {
+                it_enb->set_mnc(matches[1]);
+                continue;
+            }
+            if (regex_search(linha,matches,regexers.at("enb_id"))) {
+                it_enb->set_enbid(matches[1]);
+                continue;
+            }
+            if (regex_search(linha,matches,regexers.at("enb_ip"))) {
+                it_enb->set_ip(matches[1]);
+                continue;
+            }
+            if (regex_search(linha,matches,regexers.at("enb_s1ca"))) {
+                it_enb->set_s1ca(matches[1]);
+                continue;
+            }
+            if (regex_search(linha,matches,regexers.at("enb_tac"))) {
+                it_enb->set_tac(matches[1]);
+                continue;
+            }
+        }
+    }
+    file.close();
+}
 
 void logparser::parser::slot_upload_data() noexcept {
     if (!db_interface.connection_up()) {

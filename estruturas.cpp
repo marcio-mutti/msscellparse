@@ -220,3 +220,95 @@ size_t mobswitch::get_number_bscs() const {
 size_t mobswitch::get_number_rncs() const {
     return lista_de_rncs.size();
 }
+
+enodeb::enodeb() : ip(), mcc(0), mnc(0), tac(0), enbid(0), s1ca(0) {
+
+}
+
+enodeb::~enodeb() {
+
+}
+
+void enodeb::set_ip(const string & ip_) {
+    ip=ip_;
+}
+
+void enodeb::set_mcc(const string & mcc_) {
+    mcc=stoul(mcc_);
+}
+
+void enodeb::set_mnc(const string &mnc_) {
+    mnc=stoul(mnc_);
+}
+
+void enodeb::set_tac(const string & tac_) {
+    tac=stoul(tac_);
+}
+
+void enodeb::set_enbid(const string &enbid_) {
+    enbid=stoul(enbid_);
+}
+
+void enodeb::set_s1ca(const string &s1ca_) {
+    s1ca=stoul(s1ca_);
+}
+
+string enodeb::get_ip() const {
+    return ip;
+}
+
+string enodeb::get_mcc() const {
+    return to_string(mcc);
+}
+
+string enodeb::get_mnc() const {
+    return to_string(mnc);
+}
+
+string enodeb::get_tac() const {
+    return to_string(tac);
+}
+
+string enodeb::get_enbid() const {
+    return to_string(enbid);
+}
+
+string enodeb::get_s1ca() const {
+    return to_string(s1ca);
+}
+
+bool enodeb::operator==(const enodeb &oth) const {
+    return ip == oth.ip;
+}
+
+mme::mme() {
+
+}
+
+mme::~mme() {
+
+}
+
+void mme::set_name(const string &name_) {
+    name=name_;
+}
+
+string mme::get_name() const {
+    return name;
+}
+
+vector<enodeb>::iterator mme::add_enodeb(const enodeb & n_enodeb) {
+    vector<enodeb>::iterator result=find_enodeb(n_enodeb);
+    if (result==lista_de_enodebs.end()) {
+        result=lista_de_enodebs.insert(result,n_enodeb);
+    }
+    return result;
+}
+
+vector<enodeb>::iterator mme::find_enodeb(const enodeb & f_enodeb) {
+    for (vector<enodeb>::iterator eiter=lista_de_enodebs.begin(); eiter!=lista_de_enodebs.end();
+            ++eiter) {
+        if (*eiter == f_enodeb) return eiter;
+    }
+    return lista_de_enodebs.end();
+}

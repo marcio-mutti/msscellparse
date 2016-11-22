@@ -32,6 +32,28 @@ class celula {
     std::string name, status;
 };
 
+class enodeb {
+  public:
+    enodeb();
+    ~enodeb();
+    void set_ip(const std::string&);
+    void set_mcc(const std::string&);
+    void set_mnc(const std::string&);
+    void set_tac(const std::string&);
+    void set_enbid(const std::string&);
+    void set_s1ca(const std::string&);
+    std::string get_ip () const;
+    std::string get_mcc () const;
+    std::string get_mnc () const;
+    std::string get_tac () const;
+    std::string get_enbid () const;
+    std::string get_s1ca () const;
+    bool operator==(const enodeb&) const;
+  protected:
+    std::string ip;
+    unsigned long int mcc, mnc, tac, enbid, s1ca;
+};
+
 class controller {
 
   public:
@@ -100,6 +122,15 @@ class mobswitch {
 };
 
 class mme {
-
+  public:
+    mme();
+    ~mme();
+    void set_name(const std::string&);
+    std::string get_name() const;
+    std::vector<enodeb>::iterator add_enodeb(const enodeb&);
+    std::vector<enodeb>::iterator find_enodeb(const enodeb&);
+  protected:
+    std::string name;
+    std::vector<enodeb> lista_de_enodebs;
 };
 #endif
