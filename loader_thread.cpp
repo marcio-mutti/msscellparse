@@ -440,6 +440,11 @@ void logparser::parser::slot_upload_data() noexcept {
                                            "insert into carrier.relate_enodeb_mme (id_enodeb, id_mme) values ($1, $2)",2);
             statements.insert("insert_relation_enodeb_mme");
         }
+        if (statements.count("find_inserted_enodeb") == 0) {
+            db_interface.prepare_statement("find_inserted_enodeb",
+                                           "select id from carrier.enodeb where mcc=$1 and mnc=$2 and tac=$3 and enbid=$4",4);
+            statements.insert("find_inserted_enodeb");
+        }
     } catch (const runtime_error& erro) {
         cerr << erro.what() << endl;
         return;
@@ -532,6 +537,8 @@ void logparser::parser::slot_upload_data() noexcept {
                 id_enodeb=work_result.get_value(0,0);
             } catch (const runtime_error& erro) {
                 cerr << erro.what() << endl; //See if its a problem for now
+                work_result=db_interface.execute_returning_prepared_statement("find_inserted_enodeb", {enbiter->get_mcc(),enbiter->get_mnc(),enbiter->get_tac(),enbiter->get_enbid()});
+                id_enodeb=work_result.get_value(0,0);
             }
             db_interface.execute_prepared_statement("insert_relation_enodeb_mme", {id_enodeb,id_mme});
         }

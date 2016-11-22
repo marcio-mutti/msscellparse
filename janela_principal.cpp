@@ -117,6 +117,7 @@ void janela_principal::slot_btn_load_4g() {
 void janela_principal::slot_btn_carregar() {
     if (btn_carregar->get_label() != "Cancelar") {
         btn_load_23g->set_sensitive(false);
+        btn_load_4g->set_sensitive(false);
         btn_carregar->set_label("Cancelar");
         //work_thread=make_shared<boost::thread>(boost::thread(boost::bind(&logparser::parser::slot_run,&runner)));
         //work_thread=make_shared<boost::thread>(boost::bind(&logparser::parser::slot_run,&runner));
@@ -145,6 +146,7 @@ void janela_principal::slot_change_n_mme(const string & n_value) {
 }
 void janela_principal::slot_ready_for_new_work() {
     btn_load_23g->set_sensitive(true);
+    btn_load_4g->set_sensitive(true);
     lbl_n_23g->set_text("0");
     lbl_n_4g->set_text("0");
     btn_carregar->set_label("Carregar Arquivos");
