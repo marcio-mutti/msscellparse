@@ -431,7 +431,7 @@ void logparser::parser::slot_upload_data() noexcept {
         }
         if (statements.count("insert_enodeb") == 0) {
             db_interface.prepare_statement("insert_enodeb",
-                                           "insert into carrier.mme (ip,mcc,mnc,tac,enbid,s1ca) values ($1,$2::integer,$3::integer,$4::integer, $5::integer, $6::integer)",
+                                           "insert into carrier.enodeb (ip,mcc,mnc,tac,enbid,s1ca) values ($1,$2::integer,$3::integer,$4::integer, $5::integer, $6::integer)",
                                            6);
             statements.insert("insert_enodeb");
         }
