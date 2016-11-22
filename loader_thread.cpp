@@ -483,7 +483,7 @@ void logparser::parser::slot_upload_data() noexcept {
             for (vector<celula>::const_iterator citer=biter->cell_begin(); citer!=biter->cell_end(); ++citer) {
                 //Insert cell data
                 try {
-                    work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
+                    work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid(), citer->get_status()});
                     id_cell=work_result.get_value(0,0);
                 } catch (const runtime_error& erro) {
                     cerr << erro.what() << endl;
