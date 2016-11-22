@@ -148,7 +148,7 @@ void logparser::parser::slot_run() noexcept(false) {
         shared_ptr<::mme> work_mme = make_shared<::mme>();
         temporary_mmes.push_back(work_mme);
         parse_mme(work_mme,*miter);
-        signal_n_of_mmes_.emit(to_string(temporary_mmes.size()));
+        signal_n_of_mmes_ready_.emit(to_string(temporary_mmes.size()));
 
         // threads_de_execucao.insert({*miter,make_shared<boost::thread>([&](){parse_mme(work_mme,cref(*miter));})});
         // //TODO Tem de preparar a função para lidar com as mmes
