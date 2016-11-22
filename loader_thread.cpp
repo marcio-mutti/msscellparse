@@ -67,6 +67,9 @@ void logparser::parser::clean_database() {
         db_interface.execute_command("drop table if exists carrier.relate_cont_switch cascade");
         db_interface.execute_command("drop table if exists carrier.cells cascade");
         db_interface.execute_command("drop table if exists carrier.relate_cells_controller cascade");
+        db_interface.execute_command("drop table if exists carrier.mme cascade");
+        db_interface.execute_command("drop table if exists carrier.enodeb cascade");
+        db_interface.execute_command("drop table if exists carrier.relate_enodeb_mme cascade");
         db_interface.execute_command("drop sequence if exists carrier.cells_id_seq");
         db_interface.execute_command("drop sequence if exists carrier.controller_id_seq");
         db_interface.execute_command("drop sequence if exists carrier.mobswitch_id_seq");
@@ -171,6 +174,10 @@ void logparser::parser::slot_run() noexcept(false) {
         }
         if (miter == working_switches.end()) working_switches.push_back(*tmiter);
         else *(miter->get()) += *(tmiter->get());
+    }
+    for (vector<shared_ptr<::mme>>::const_iterator tmiter=temporary_mmes.cbegin();
+            tmiter!=temporary_mmes.cend(); ++tmiter) {
+        working_mmes.push_back(*tmiter); //FIXME For now I have only one file for each mme.
     }
     lista_de_mobswitches.clear();
     lista_de_mmes.clear();
@@ -303,6 +310,8 @@ void logparser::parser::parse_mme(std::shared_ptr<::mme> work_mme, const string 
     ifstream file(filename,ios_base::in);
     bool n_enb(false);
     smatch matches;
+    regex_search(filename,matches,regex{"(.*?)(\\.log)"}); //Hack for my situation. Couldn't find the mme identification in file.
+    work_mme->set_name(matches[1]);
     vector<enodeb>::iterator it_enb;
     while (file.good()) {
         string linha(readline(file));
@@ -366,6 +375,9 @@ void logparser::parser::slot_upload_data() noexcept {
         db_interface.execute_command("create table if not exists carrier.relate_cont_switch (id serial, id_controller integer, id_mobswitch integer, unique (id_controller, id_mobswitch))");
         db_interface.execute_command("create table if not exists carrier.cells (id serial, name text, mcc integer, mnc integer, lac integer, sac_cid integer, status text, primary key (mcc,mnc,lac,sac_cid))");
         db_interface.execute_command("create table if not exists carrier.relate_cells_controller (id serial, id_cell integer, id_cont integer, unique (id_cell,id_cont))");
+        db_interface.execute_command("create table if not exists carrier.mme (id serial, name text, primary key(name))");
+        db_interface.execute_command("create table if not exists carrier.enodeb (id serial, ip inet, mcc integer, mnc integer, tac integer, enbid integer, s1ca integer, primary key(mcc,mnc,tac,enbid))");
+        db_interface.execute_command("create table if not exists carrier.relate_enodeb_mme (id serial, id_enodeb integer, id_mme integer, primary key(id_enodeb, id_mme))");
     } catch (const runtime_error& erro) {
         cerr << erro.what() << endl;
         return;
@@ -411,6 +423,22 @@ void logparser::parser::slot_upload_data() noexcept {
                                            "insert into carrier.relate_cells_controller (id_cell, id_cont) values ($1, $2) on conflict do nothing",
                                            2);
             statements.insert("insert_relation_cell_controller");
+        }
+        if (statements.count("insert_mme") == 0) {
+            db_interface.prepare_statement("insert_mme",
+                                           "insert into carrier.mme (name) values ($1) on conflict do nothing returning id",1);
+            statements.insert("insert_mme");
+        }
+        if (statements.count("insert_enodeb") == 0) {
+            db_interface.prepare_statement("insert_enodeb",
+                                           "insert into carrier.mme (ip,mcc,mnc,tac,enbid,s1ca) values ($1,$2::integer,$3::integer,$4::integer, $5::integer, $6::integer)",
+                                           6);
+            statements.insert("insert_enodeb");
+        }
+        if (statements.count("insert_relation_enodeb_mme") == 0) {
+            db_interface.prepare_statement("insert_relation_enodeb_mme",
+                                           "insert into carrier.relate_enodeb_mme (id_enodeb, id_mme) values ($1, $2)",2);
+            statements.insert("insert_relation_enodeb_mme");
         }
     } catch (const runtime_error& erro) {
         cerr << erro.what() << endl;
@@ -487,6 +515,25 @@ void logparser::parser::slot_upload_data() noexcept {
                 }
                 db_interface.execute_prepared_statement("insert_relation_cell_controller", {id_cell,id_controller});
             }
+        }
+    }
+    //Now to the mmes
+    for (vector<shared_ptr<::mme>>::const_iterator miter=working_mmes.cbegin();
+            miter!=working_mmes.cend(); ++miter) {
+        string id_mme, id_enodeb;
+        pgsql::query_result work_result;
+        work_result=db_interface.execute_returning_prepared_statement("insert_mme", {miter->get()->get_name()});
+        id_mme=work_result.get_value(0,0);
+        //Now we loop for the enodebs
+        for (vector<enodeb>::const_iterator enbiter=miter->get()->enodeb_begin();
+                enbiter!=miter->get()->enodeb_end(); ++enbiter) {
+            try { //(ip,mcc,mnc,tac,enbid,s1ca)
+                work_result=db_interface.execute_returning_prepared_statement("insert_enodeb", {enbiter->get_ip(),enbiter->get_mcc(),enbiter->get_mnc(),enbiter->get_tac(),enbiter->get_enbid(),enbiter->get_s1ca()});
+                id_enodeb=work_result.get_value(0,0);
+            } catch (const runtime_error& erro) {
+                cerr << erro.what() << endl; //See if its a problem for now
+            }
+            db_interface.execute_prepared_statement("insert_relation_enodeb_mme", {id_enodeb,id_mme});
         }
     }
     signal_send_upload_node_.emit("Encerrado.");

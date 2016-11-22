@@ -312,3 +312,11 @@ vector<enodeb>::iterator mme::find_enodeb(const enodeb & f_enodeb) {
     }
     return lista_de_enodebs.end();
 }
+
+vector<enodeb>::const_iterator mme::enodeb_begin() const {
+    return lista_de_enodebs.cbegin();
+}
+
+vector<enodeb>::const_iterator mme::enodeb_end() const {
+    return  lista_de_enodebs.cend();
+}

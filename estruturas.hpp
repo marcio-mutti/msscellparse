@@ -129,6 +129,8 @@ class mme {
     std::string get_name() const;
     std::vector<enodeb>::iterator add_enodeb(const enodeb&);
     std::vector<enodeb>::iterator find_enodeb(const enodeb&);
+    std::vector<enodeb>::const_iterator enodeb_begin() const;
+    std::vector<enodeb>::const_iterator enodeb_end() const;
   protected:
     std::string name;
     std::vector<enodeb> lista_de_enodebs;
