@@ -25,6 +25,7 @@ string logparser::readline(ifstream &filehandle) {
 
 logparser::parser::parser() {
     triggers.insert( {"cell_3g", regex{"SERVICE AREAS IN MSS CONCEPT \\:"}});
+    triggers.insert( {"cell_3g_end",regex{"RNCs IN MSS CONCEPT LOCATED IN LOCATION AREA \\:"}} );
     triggers.insert( {"cell_2g", regex{"BTSs UNDER BSC \\:"}});
     triggers.insert( {"bscname", regex{"(?:BSC NAME )(?:\\.*)(?:\\(NAME\\)\\. \\:)(\\w+)"}});
     triggers.insert( {"rncid", regex{"(?:RNC IDENTIFICATION\\.+ RNCID \\.+ \\: )(\\d+)"}});
@@ -256,6 +257,10 @@ void logparser::parser::parse_switch(std::shared_ptr<::mobswitch> work_switch,
             }
             t_cell2g = t_bsc = t_rnc = false;
             t_cell3g = true;
+            continue;
+        }
+        if (regex_search(linha,matches, triggers.at("cell_3g_end"))) {
+            t_cell3g=false;
             continue;
         }
         if (regex_search(linha, matches, triggers.at("rncid"))) {
@@ -511,7 +516,7 @@ void logparser::parser::slot_upload_data() noexcept {
             for (vector<celula>::const_iterator citer=riter->cell_begin(); citer!=riter->cell_end(); ++citer) {
                 //Insert cell data
                 try {
-                    work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid()});
+                    work_result=db_interface.execute_returning_prepared_statement("insert_cell", {citer->get_name(),citer->get_mcc(),citer->get_mnc(),citer->get_lac_sac(),citer->get_cid(),citer->get_status()});
                     id_cell=work_result.get_value(0,0);
                 } catch (const runtime_error& erro) {
                     cerr << erro.what() << endl;
