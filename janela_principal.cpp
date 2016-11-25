@@ -8,8 +8,10 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     lbl_n_23g ( nullptr ), lbl_n_4g ( nullptr ), lbl_n_central ( nullptr ), lbl_n_bsc ( nullptr ),
     lbl_n_rnc ( nullptr ), lbl_n_mme ( nullptr ), lbl_n_central_up ( nullptr ),
     lbl_n_bsc_up ( nullptr ), lbl_n_rnc_up ( nullptr ), lbl_n_mme_up ( nullptr ),
+    lbl_n_ss7arq(nullptr), lbl_n_ss7(nullptr),
     btn_load_23g ( nullptr ), btn_load_4g ( nullptr ), btn_carregar ( nullptr ),
-    btn_subir_banco ( nullptr ), btn_db_clean(nullptr), sts_bar(nullptr), sts_spin(nullptr),
+    btn_subir_banco ( nullptr ), btn_db_clean(nullptr), btn_load_ss7(nullptr), sts_bar(nullptr),
+    sts_spin(nullptr),
     work_thread() {
     try {
         janelator = Gtk::Builder::create_from_file ( "../msscellparse/Janela_Principal.glade" );
@@ -31,11 +33,14 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     janelator->get_widget ( "lbl_n_mme_up", lbl_n_mme_up );
     janelator->get_widget ( "lbl_n_rnc", lbl_n_rnc );
     janelator->get_widget ( "lbl_n_rnc_up", lbl_n_rnc_up );
+    janelator->get_widget ( "lbl_n_ss7arq", lbl_n_ss7arq );
+    janelator->get_widget ( "lbl_n_ss7", lbl_n_ss7 );
     janelator->get_widget ( "btn_load_23g", btn_load_23g );
     janelator->get_widget ( "btn_load_4g", btn_load_4g );
     janelator->get_widget ( "btn_carregar", btn_carregar );
     janelator->get_widget ( "btn_subir_banco", btn_subir_banco );
     janelator->get_widget ( "btn_db_clean", btn_db_clean);
+    janelator->get_widget ( "btn_load_ss7", btn_load_ss7 );
     janelator->get_widget ( "sts_bar", sts_bar );
     janelator->get_widget ( "sts_spin", sts_spin );
     this->add ( *box_principal );
@@ -44,15 +49,14 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
             &janela_principal::slot_btn_load_23g ) );
     btn_load_4g->signal_clicked().connect ( sigc::mem_fun ( *this,
                                             &janela_principal::slot_btn_load_4g ) );
+    btn_load_ss7->signal_clicked().connect(sigc::mem_fun(*this,&janela_principal::slot_btn_load_ss7));
     btn_carregar->signal_clicked().connect ( sigc::mem_fun ( *this,
             &janela_principal::slot_btn_carregar ) );
     btn_subir_banco->signal_clicked().connect ( sigc::mem_fun ( *this,
             &janela_principal::slot_btn_subir_banco ) );
     btn_db_clean->signal_clicked().connect(sigc::mem_fun(*this,&janela_principal::slot_db_cleaner));
     signal_new_file.connect ( sigc::mem_fun ( runner, &logparser::parser::slot_new_file ) );
-    runner.signal_n_of_mobswitches().connect(sigc::mem_fun(*this,
-            &janela_principal::slot_change_n_mobswitch));
-    runner.signal_n_of_mmes().connect(sigc::mem_fun(*this,&janela_principal::slot_change_n_mme));
+    runner.signal_n_files().connect(sigc::mem_fun(*this,&janela_principal::slot_change_n_file));
     runner.signal_work_finish().connect(sigc::mem_fun(*this,
                                         &janela_principal::slot_ready_for_new_work));
     runner.signal_n_of_mobswitches_ready().connect ( sigc::mem_fun(*this,
@@ -62,57 +66,18 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
             &janela_principal::slot_open_connect_string_file));
     runner.signal_send_upload_node().connect(sigc::mem_fun(*this,
             &janela_principal::slot_db_working_node));
-    //box_principal->show_all_children();
     show_all_children();
 }
 janela_principal::~janela_principal() {}
 void janela_principal::slot_btn_load_23g() {
-    vector<string> filenames;
-    Glib::RefPtr<Gtk::FileFilter> filter_logs ( nullptr );
-    Gtk::FileChooserDialog filedialog ( *this, "Selecione os arquivos das Switches:",
-                                        Gtk::FILE_CHOOSER_ACTION_OPEN );
-    int dialog_result ( 0 );
-    filedialog.set_select_multiple();
-    filedialog.add_button ( "_Cancelar", Gtk::RESPONSE_CANCEL );
-    filedialog.add_button ( "_Abrir", Gtk::RESPONSE_OK );
-    filter_logs = Gtk::FileFilter::create();
-    filter_logs->set_name ( "Log Files" );
-    filter_logs->add_mime_type ( "text/plain" );
-    filedialog.add_filter ( filter_logs );
-    dialog_result = filedialog.run();
-    switch ( dialog_result ) {
-    case Gtk::RESPONSE_CANCEL:
-        return;
-    case Gtk::RESPONSE_OK:
-        filenames = filedialog.get_filenames();
-        for ( vector<string>::iterator riter = filenames.begin(); riter != filenames.end(); ++riter ) {
-            signal_new_file.emit ( *riter, logparser::logtype::mobswitch );
-        }
-    }
+    log_loader("Selecione os arquivos das Switches:",logparser::logtype::mobswitch);
 }
 void janela_principal::slot_btn_load_4g() {
-    vector<string> filenames;
-    Glib::RefPtr<Gtk::FileFilter> filter_logs ( nullptr );
-    Gtk::FileChooserDialog filedialog ( *this, "Selecione os arquivos das Mmes:",
-                                        Gtk::FILE_CHOOSER_ACTION_OPEN );
-    int dialog_result ( 0 );
-    filedialog.set_select_multiple();
-    filedialog.add_button ( "_Cancelar", Gtk::RESPONSE_CANCEL );
-    filedialog.add_button ( "_Abrir", Gtk::RESPONSE_OK );
-    filter_logs = Gtk::FileFilter::create();
-    filter_logs->set_name ( "Log Files" );
-    filter_logs->add_mime_type ( "text/plain" );
-    filedialog.add_filter ( filter_logs );
-    dialog_result = filedialog.run();
-    switch ( dialog_result ) {
-    case Gtk::RESPONSE_CANCEL:
-        return;
-    case Gtk::RESPONSE_OK:
-        filenames = filedialog.get_filenames();
-        for ( vector<string>::iterator riter = filenames.begin(); riter != filenames.end(); ++riter ) {
-            signal_new_file.emit ( *riter, logparser::logtype::mme );
-        }
-    }
+    log_loader("Selecione os arquivos das Mmes:",logparser::logtype::mme);
+}
+
+void janela_principal::slot_btn_load_ss7() {
+    log_loader("Selecione os arquivos de log com informações de rotas:",logparser::logtype::ss7);
 }
 void janela_principal::slot_btn_carregar() {
     if (btn_carregar->get_label() != "Cancelar") {
@@ -137,13 +102,7 @@ void janela_principal::slot_btn_subir_banco() {
     btn_load_4g->set_sensitive(true);
     btn_subir_banco->set_sensitive(true);
 }
-void janela_principal::slot_change_n_mobswitch(const string& n_value) {
-    lbl_n_23g->set_text(n_value);
-}
 
-void janela_principal::slot_change_n_mme(const string & n_value) {
-    lbl_n_4g->set_text(n_value);
-}
 void janela_principal::slot_ready_for_new_work() {
     btn_load_23g->set_sensitive(true);
     btn_load_4g->set_sensitive(true);
@@ -183,8 +142,33 @@ string janela_principal::slot_open_connect_string_file() {
     return filename;
 }
 
+void janela_principal::log_loader(const string &title, const logparser::logtype &infotype) {
+    vector<string> filenames;
+    Glib::RefPtr<Gtk::FileFilter> filter_logs ( nullptr );
+    Gtk::FileChooserDialog filedialog ( *this, title,
+                                        Gtk::FILE_CHOOSER_ACTION_OPEN );
+    int dialog_result ( 0 );
+    filedialog.set_select_multiple();
+    filedialog.add_button ( "_Cancelar", Gtk::RESPONSE_CANCEL );
+    filedialog.add_button ( "_Abrir", Gtk::RESPONSE_OK );
+    filter_logs = Gtk::FileFilter::create();
+    filter_logs->set_name ( "Log Files" );
+    filter_logs->add_mime_type ( "text/plain" );
+    filedialog.add_filter ( filter_logs );
+    dialog_result = filedialog.run();
+    switch ( dialog_result ) {
+    case Gtk::RESPONSE_CANCEL:
+        return;
+    case Gtk::RESPONSE_OK:
+        filenames = filedialog.get_filenames();
+        for ( vector<string>::iterator riter = filenames.begin(); riter != filenames.end(); ++riter ) {
+            signal_new_file.emit ( *riter, infotype );
+        }
+    }
+}
+
 void janela_principal::slot_db_working_node(std::string node) {
-    sts_bar->push("Uploading: "+node);
+    sts_bar->push(node);
     while (Gtk::Main::events_pending()) Gtk::Main::iteration();
 }
 
@@ -196,4 +180,19 @@ void janela_principal::slot_db_cleaner() {
     while (Gtk::Main::events_pending()) Gtk::Main::iteration();
     if (resposta == Gtk::RESPONSE_NO) return;
     runner.clean_database();
+}
+
+void janela_principal::slot_change_n_file(const string & n_file,
+        const logparser::logtype & nodetype) {
+    switch (nodetype) {
+    case logparser::logtype::mobswitch:
+        lbl_n_23g->set_text(n_file);
+        break;
+    case logparser::logtype::mme:
+        lbl_n_4g->set_text(n_file);
+        break;
+    case logparser::logtype::ss7:
+        lbl_n_ss7arq->set_text(n_file);
+        break;
+    }
 }

@@ -32,6 +32,7 @@ logparser::parser::parser() {
     triggers.insert( {"rnc_load_lac",regex{"(?:LA +NAME \\:LAC)(\\d+)(?: +LAC +\\: *)(\\d+)"}});
     triggers.insert( {"enodeb", regex{"ENB IN RADIO NETWORK"}} );
     triggers.insert( {"enodeb_end", regex{"BROADCAST PLMN\\:"}} );
+    triggers.insert( {"ss7_network", regex{"(?:NETWORK \\:)(\\w+)"}} );
     regexers.insert( {"switchname", regex{"(?:MSCi +)(\\w+)(?: +)(\\d{4}-\\d{2}-\\d{2} +\\d{2}\\:\\d{2}\\:\\d{2})"}});
     regexers.insert( {"cell_2g", regex{"(?:^ +)(\\w+)(?: +\\d+ +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\w+)"}});
     regexers.insert( {"rncname", regex{"(?:RNC NAME\\.+ RNCNAME \\. \\: )(\\w+)"}});
@@ -47,6 +48,8 @@ logparser::parser::parser() {
     regexers.insert( {"enb_ip",regex{"(?:ENB IP ADDRESS\\.+\\(ENBIP\\)\\.+ \\: )(\\d+\\.\\d+\\.\\d+\\.\\d+)"}} );
     regexers.insert( {"enb_s1ca", regex{"(?:S1 CONNECTION AMOUNT\\.+\\(S1CA\\)\\.+ \\: )(\\d+)"}} );
     regexers.insert( {"enb_tac", regex{"(?:TRACKING AREA CODE\\.+\\(TAC.. *\\)\\.* \\: )(\\d+)"}} );
+    regexers.insert( {"ss7_full_route", regex{"(?:\\w+/)(\\d+)(?: +)(\\w+)(?: +\\w+ +\\w+/)(\\d+)"}} );
+    regexers.insert( {"ss7_redundant_route", regex{"(?:\\w+/)(\\d+)"}} );
 }
 logparser::parser::~parser() {}
 
@@ -71,6 +74,9 @@ void logparser::parser::clean_database() {
         db_interface.execute_command("drop table if exists carrier.mme cascade");
         db_interface.execute_command("drop table if exists carrier.enodeb cascade");
         db_interface.execute_command("drop table if exists carrier.relate_enodeb_mme cascade");
+        db_interface.execute_command("drop table if exists carrier.ss7_nodes");
+        db_interface.execute_command("drop table if exists carrier.ss7_links");
+        db_interface.execute_command("drop table if exists carrier.ss7_routes");
         db_interface.execute_command("drop sequence if exists carrier.cells_id_seq");
         db_interface.execute_command("drop sequence if exists carrier.controller_id_seq");
         db_interface.execute_command("drop sequence if exists carrier.mobswitch_id_seq");
@@ -91,13 +97,17 @@ void logparser::parser::slot_new_file(
     case logtype::mme:
         lista_de_mmes.push_back(filename);
         break;
+    case logtype::ss7:
+        lista_de_nos_ss7.push_back(filename);
+        break;
     default:
         string message("Tipo de elemento de rede incorreto. Informado: ");
         message += to_string(type_of_logger) + '\n';
         throw(domain_error(message));
     }
-    signal_n_of_mobswitches_.emit(to_string(lista_de_mobswitches.size()));
-    signal_n_of_mmes_.emit(to_string(lista_de_mmes.size()));
+    signal_n_files().emit(to_string(lista_de_mobswitches.size()),logtype::mobswitch);
+    signal_n_files().emit(to_string(lista_de_mmes.size()),logtype::mme);
+    signal_n_files().emit(to_string(lista_de_nos_ss7.size()),logtype::ss7);
 }
 sigc::signal<void, const string &>
 logparser::parser::signal_n_of_mobswitches() {
@@ -125,6 +135,10 @@ sigc::signal<string> logparser::parser::signal_ask_for_connect_string_file() {
 
 sigc::signal<void, string> logparser::parser::signal_send_upload_node() {
     return signal_send_upload_node_;
+}
+
+sigc::signal<void, const string&, const logparser::logtype &> logparser::parser::signal_n_files() {
+    return signal_n_files_;
 }
 
 void logparser::parser::slot_run() noexcept(false) {
@@ -360,6 +374,46 @@ void logparser::parser::parse_mme(std::shared_ptr<::mme> work_mme, const string 
     file.close();
 }
 
+void logparser::parser::parse_ss7_node(std::shared_ptr<ss7_node> work_node,
+                                       const string & filename) {
+    ifstream file(filename,ios_base::in);
+    bool sw_ident(false), s_network(false), s_route(false);
+    vector<ss7_route>::iterator it_route;
+    string work_network;
+    smatch matches;
+    while (file.good()) {
+        string linha(readline(file));
+        //Firstly, find the name for the node
+        if (!sw_ident) {
+            if (regex_search(linha,matches,regexers.at("switchname"))) {
+                work_node->set_name(matches[1]);
+                sw_ident=true;
+                continue;
+            }
+            continue;
+        }
+        //Proceeding to the triggers
+        if (regex_search(linha,matches,triggers.at("ss7_network"))) {
+            //There's the network identification already
+            work_network=matches[1];
+            work_node->add_network(work_network);
+            s_network=true;
+            continue;
+        }
+        if (s_network) {
+            if(regex_search(linha,matches,regexers.at("ss7_full_route"))) {
+                it_route=work_node->add_full_route(work_network,matches[2],matches[1],matches[3]);
+                continue;
+            }
+            if (regex_search(linha,matches,regexers.at("ss7_redundant_route"))) {
+                work_node->add_redundant_route(it_route,matches[1]);
+                continue;
+            }
+        }
+    }
+    file.close();
+}
+
 void logparser::parser::slot_upload_data() noexcept {
     if (!db_interface.connection_up()) {
         string configuration_file=signal_ask_for_connect_string_file_.emit();
@@ -383,6 +437,9 @@ void logparser::parser::slot_upload_data() noexcept {
         db_interface.execute_command("create table if not exists carrier.mme (id serial, name text, primary key(name))");
         db_interface.execute_command("create table if not exists carrier.enodeb (id serial, ip inet, mcc integer, mnc integer, tac integer, enbid integer, s1ca integer, primary key(mcc,mnc,tac,enbid))");
         db_interface.execute_command("create table if not exists carrier.relate_enodeb_mme (id serial, id_enodeb integer, id_mme integer, primary key(id_enodeb, id_mme))");
+        db_interface.execute_command("create table if not exists carrier.ss7_nodes (opc integer, name text, id_switch integer, primary key(opc))");
+        db_interface.execute_command("create table if not exists carrier.ss7_links (opc integer, apc integer, network varchar(5), primary key(network,opc,apc))");
+        db_interface.execute_command("create table if not exists carrier.ss7_routes (id serial, name text, opc integer, dpc integer, apc integer, primary key(opc,dpc,apc))");
     } catch (const runtime_error& erro) {
         cerr << erro.what() << endl;
         return;

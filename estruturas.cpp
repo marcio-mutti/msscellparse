@@ -320,3 +320,86 @@ vector<enodeb>::const_iterator mme::enodeb_begin() const {
 vector<enodeb>::const_iterator mme::enodeb_end() const {
     return  lista_de_enodebs.cend();
 }
+
+ss7_route::ss7_route() : name(), dpc(0) {
+
+}
+
+ss7_route::~ss7_route() {
+
+}
+
+void ss7_route::set_name(const string &name_) {
+    name=name_;
+}
+
+string ss7_route::get_name() const {
+    return name;
+}
+
+void ss7_route::set_dpc(const unsigned long &dpc_) {
+    dpc=dpc_;
+}
+
+void ss7_route::add_connection(const unsigned long & apc) {
+    conections.push_back(apc);
+}
+
+ss7_node::ss7_node() {
+
+}
+
+ss7_node::~ss7_node() {
+
+}
+
+void ss7_node::set_name(const string & name_) {
+    name=name_;
+}
+
+string ss7_node::get_name() const {
+    return name;
+}
+
+void ss7_node::set_opc(const unsigned long & opc_) {
+    opc=opc_;
+}
+
+unsigned long ss7_node::get_opc() const {
+    return opc;
+}
+
+vector<ss7_route>::iterator ss7_node::add_route(const ss7_route & n_route) {
+    return route_list.insert(route_list.end(),n_route);
+}
+
+void ss7_node::add_network(const string & network_name) {
+    networks.insert({network_name,{}});
+}
+
+vector<ss7_route>::iterator ss7_node::add_full_route(const string & network,
+        const string &route_name,
+        const string &dpc,
+        const string &apc) {
+    ss7_route n_route;
+    n_route.set_name(route_name);
+    n_route.set_dpc(stoul(dpc));
+    n_route.add_connection(stoul(apc));
+    if (networks.count(network) == 0) {
+        return networks.insert({network,{n_route}}).first->second.begin();
+    } else {
+        return networks.at(network).insert(networks.at(network).end(),n_route);
+    }
+}
+
+void ss7_node::add_redundant_route(vector<ss7_route>::iterator& it_route, const string& apc) {
+    it_route->add_connection(stoul(apc));
+}
+
+bool ss7_node::operator==(const unsigned int & oth_opc) const {
+    return opc == oth_opc;
+}
+
+bool ss7_node::operator==(const ss7_node & oth) const {
+    return opc==oth.opc;
+}

@@ -1,6 +1,7 @@
 #ifndef ESTRUTURAS
 #define ESTRUTURAS
 
+# include <map>
 # include <set>
 # include <string>
 # include <vector>
@@ -135,4 +136,43 @@ class mme {
     std::string name;
     std::vector<enodeb> lista_de_enodebs;
 };
+
+class ss7_route {
+  public:
+    ss7_route();
+    ~ss7_route();
+    void set_name(const std::string&);
+    std::string get_name() const;
+    void set_dpc(const unsigned long int&);
+    unsigned long int get_dpc() const;
+    void add_connection(const unsigned long&);
+  protected:
+    std::string name;
+    unsigned long int dpc;
+    std::vector<unsigned long int> conections;
+};
+
+class ss7_node {
+  public:
+    ss7_node();
+    ~ss7_node();
+    void set_name(const std::string&);
+    std::string get_name() const;
+    void set_opc(const unsigned long int&);
+    unsigned long int get_opc() const;
+    std::vector<ss7_route>::iterator add_route(const ss7_route&);
+    void add_network(const std::string&);
+    std::vector<ss7_route>::iterator add_full_route(const std::string&,const std::string&,
+            const std::string&, const std::string&);
+    void add_redundant_route(std::vector<ss7_route>::iterator&, const std::string&);
+    bool operator==(const unsigned int&) const;
+    bool operator==(const ss7_node&) const;
+  protected:
+    std::string name;
+    unsigned long int opc;
+    std::map<std::string,std::vector<ss7_route>> networks;
+    std::vector<ss7_route> route_list;
+
+};
+
 #endif
