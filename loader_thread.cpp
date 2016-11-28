@@ -32,7 +32,7 @@ logparser::parser::parser() {
     triggers.insert( {"rnc_load_lac",regex{"(?:LA +NAME \\:LAC)(\\d+)(?: +LAC +\\: *)(\\d+)"}});
     triggers.insert( {"enodeb", regex{"ENB IN RADIO NETWORK"}} );
     triggers.insert( {"enodeb_end", regex{"BROADCAST PLMN\\:"}} );
-    triggers.insert( {"ss7_network", regex{"(?:NETWORK \\:)(\\w+)"}} );
+    triggers.insert( {"ss7_network", regex{"(?:NETWORK\\: +)(\\w+)"}} );
     regexers.insert( {"switchname", regex{"(?:MSCi +)(\\w+)(?: +)(\\d{4}-\\d{2}-\\d{2} +\\d{2}\\:\\d{2}\\:\\d{2})"}});
     regexers.insert( {"cell_2g", regex{"(?:^ +)(\\w+)(?: +\\d+ +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\d+)(?: +)(\\w+)"}});
     regexers.insert( {"rncname", regex{"(?:RNC NAME\\.+ RNCNAME \\. \\: )(\\w+)"}});
@@ -50,6 +50,7 @@ logparser::parser::parser() {
     regexers.insert( {"enb_tac", regex{"(?:TRACKING AREA CODE\\.+\\(TAC.. *\\)\\.* \\: )(\\d+)"}} );
     regexers.insert( {"ss7_full_route", regex{"(?:\\w+/)(\\d+)(?: +)(\\w+)(?: +\\w+ +\\w+/)(\\d+)"}} );
     regexers.insert( {"ss7_redundant_route", regex{"(?:\\w+/)(\\d+)"}} );
+    regexers.insert( {"ss7_opc", regex{"(?:\\w+/)(\\d+)(?: +)(\\w+)(?: +OWN SIGNALLING POINT AS TRANSFER POINT)"}} );
 }
 logparser::parser::~parser() {}
 
@@ -129,6 +130,10 @@ sigc::signal<void, const string &> logparser::parser::signal_n_of_mmes_ready() {
     return signal_n_of_mmes_ready_;
 }
 
+sigc::signal<void, const string &> logparser::parser::signal_n_of_ss7_nodes_ready() {
+    return signal_n_of_ss7_nodes_ready_;
+}
+
 sigc::signal<string> logparser::parser::signal_ask_for_connect_string_file() {
     return signal_ask_for_connect_string_file_;
 }
@@ -142,9 +147,10 @@ sigc::signal<void, const string&, const logparser::logtype &> logparser::parser:
 }
 
 void logparser::parser::slot_run() noexcept(false) {
-    size_t n_bsc(0), n_rnc(0);
+    size_t n_bsc(0), n_rnc(0), n_ss7(0);
     vector<shared_ptr<::mobswitch>> temporary_mobswitches;
     vector<shared_ptr<::mme>> temporary_mmes;
+    vector<shared_ptr<::ss7_node>> temporary_ss7_nodes;
     for (vector<string>::iterator siter = lista_de_mobswitches.begin();
             siter != lista_de_mobswitches.end(); ++siter) {
         shared_ptr<::mobswitch> work_switch = make_shared<::mobswitch>();
@@ -172,6 +178,13 @@ void logparser::parser::slot_run() noexcept(false) {
         // //TODO Tem de preparar a função para lidar com as mmes
         // parse_switch(work_switch,switch_filename);
     }
+    for (vector<string>::const_iterator siter = lista_de_nos_ss7.cbegin();
+            siter != lista_de_nos_ss7.cend(); ++siter) {
+        shared_ptr<::ss7_node> work_ss7 = make_shared<::ss7_node>();
+        temporary_ss7_nodes.push_back(work_ss7);
+        parse_ss7_node(work_ss7,*siter);
+        signal_n_of_ss7_nodes_ready_.emit(to_string(temporary_ss7_nodes.size()));
+    }
     for (map<string, shared_ptr<boost::thread>>::iterator titer =
                 threads_de_execucao.begin();
             titer != threads_de_execucao.end(); ++titer) {
@@ -196,6 +209,7 @@ void logparser::parser::slot_run() noexcept(false) {
     }
     lista_de_mobswitches.clear();
     lista_de_mmes.clear();
+    lista_de_nos_ss7.clear();
     signal_work_finish_.emit();
 
     //boost::this_thread::sleep_for(boost::chrono::milliseconds(400));
@@ -377,7 +391,7 @@ void logparser::parser::parse_mme(std::shared_ptr<::mme> work_mme, const string 
 void logparser::parser::parse_ss7_node(std::shared_ptr<ss7_node> work_node,
                                        const string & filename) {
     ifstream file(filename,ios_base::in);
-    bool sw_ident(false), s_network(false), s_route(false);
+    bool sw_ident(false), s_network(false), s_opc(false);
     vector<ss7_route>::iterator it_route;
     string work_network;
     smatch matches;
@@ -399,6 +413,12 @@ void logparser::parser::parse_ss7_node(std::shared_ptr<ss7_node> work_node,
             work_node->add_network(work_network);
             s_network=true;
             continue;
+        }
+        if(!s_opc) {
+            if (regex_search(linha,matches,regexers.at("ss7_opc"))) {
+                work_node->set_opc(stoul(matches[1]));
+                s_opc=true;
+            }
         }
         if (s_network) {
             if(regex_search(linha,matches,regexers.at("ss7_full_route"))) {

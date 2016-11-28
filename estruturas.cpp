@@ -345,7 +345,7 @@ void ss7_route::add_connection(const unsigned long & apc) {
     conections.push_back(apc);
 }
 
-ss7_node::ss7_node() {
+ss7_node::ss7_node() :name(), opc(0) {
 
 }
 

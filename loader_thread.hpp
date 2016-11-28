@@ -31,6 +31,7 @@ class parser : public sigc::trackable {
     sigc::signal<void, const std::string&, const std::string&, const std::string&>
     signal_n_of_mobswitches_ready();
     sigc::signal<void,const std::string&> signal_n_of_mmes_ready();
+    sigc::signal<void,const std::string&> signal_n_of_ss7_nodes_ready();
     sigc::signal<std::string> signal_ask_for_connect_string_file();
     sigc::signal<void,std::string> signal_send_upload_node();
     sigc::signal<void, const std::string&, const logtype&> signal_n_files();
@@ -61,6 +62,7 @@ class parser : public sigc::trackable {
     sigc::signal<void, const std::string&, const std::string&, const std::string&>
     signal_n_of_mobswitches_ready_;
     sigc::signal<void, const std::string&> signal_n_of_mmes_ready_;
+    sigc::signal<void,const std::string&> signal_n_of_ss7_nodes_ready_;
     sigc::signal<std::string> signal_ask_for_connect_string_file_;
     sigc::signal<void,std::string> signal_send_upload_node_;
     sigc::signal<void, const std::string&, const logtype&> signal_n_files_;

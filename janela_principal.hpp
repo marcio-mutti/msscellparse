@@ -33,6 +33,7 @@ class janela_principal : public Gtk::ApplicationWindow {
     void slot_ready_for_new_work();
     void slot_readied_switches(const std::string&, const std::string&, const std::string&);
     void slot_readied_mmes(const std::string&);
+    void slot_readied_ss7_nodes(const std::string&);
     void slot_db_working_node(std::string);
     void slot_db_cleaner();
     void slot_change_n_file(const std::string&, const logparser::logtype&);

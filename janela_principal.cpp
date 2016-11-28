@@ -10,8 +10,8 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     lbl_n_bsc_up ( nullptr ), lbl_n_rnc_up ( nullptr ), lbl_n_mme_up ( nullptr ),
     lbl_n_ss7arq(nullptr), lbl_n_ss7(nullptr),
     btn_load_23g ( nullptr ), btn_load_4g ( nullptr ), btn_carregar ( nullptr ),
-    btn_subir_banco ( nullptr ), btn_db_clean(nullptr), btn_load_ss7(nullptr), sts_bar(nullptr),
-    sts_spin(nullptr),
+    btn_subir_banco ( nullptr ), btn_db_clean(nullptr), btn_load_ss7(nullptr),
+    sts_bar(nullptr), sts_spin(nullptr),
     work_thread() {
     try {
         janelator = Gtk::Builder::create_from_file ( "../msscellparse/Janela_Principal.glade" );
@@ -62,6 +62,8 @@ janela_principal::janela_principal() : janelator ( nullptr ), box_principal ( nu
     runner.signal_n_of_mobswitches_ready().connect ( sigc::mem_fun(*this,
             &janela_principal::slot_readied_switches) );
     runner.signal_n_of_mmes_ready().connect( sigc::mem_fun(*this,&janela_principal::slot_readied_mmes));
+    runner.signal_n_of_ss7_nodes_ready().connect( sigc::mem_fun(*this,
+            &janela_principal::slot_readied_ss7_nodes));
     runner.signal_ask_for_connect_string_file().connect (sigc::mem_fun(*this,
             &janela_principal::slot_open_connect_string_file));
     runner.signal_send_upload_node().connect(sigc::mem_fun(*this,
@@ -124,6 +126,11 @@ void janela_principal::slot_readied_switches(const std::string& n_sw_value,
 
 void janela_principal::slot_readied_mmes(const string &n_mme_value) {
     lbl_n_mme->set_text(n_mme_value);
+    while (Gtk::Main::events_pending()) Gtk::Main::iteration();
+}
+
+void janela_principal::slot_readied_ss7_nodes(const string &n_ss7_value) {
+    lbl_n_ss7->set_text(n_ss7_value);
     while (Gtk::Main::events_pending()) Gtk::Main::iteration();
 }
 string janela_principal::slot_open_connect_string_file() {
