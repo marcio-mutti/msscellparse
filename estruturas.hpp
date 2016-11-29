@@ -146,6 +146,8 @@ class ss7_route {
     void set_dpc(const unsigned long int&);
     unsigned long int get_dpc() const;
     void add_connection(const unsigned long&);
+    std::vector<unsigned long int>::const_iterator conn_begin() const;
+    std::vector<unsigned long int>::const_iterator conn_end() const;
   protected:
     std::string name;
     unsigned long int dpc;
@@ -165,6 +167,8 @@ class ss7_node {
     std::vector<ss7_route>::iterator add_full_route(const std::string&,const std::string&,
             const std::string&, const std::string&);
     void add_redundant_route(std::vector<ss7_route>::iterator&, const std::string&);
+    std::map<std::string,std::vector<ss7_route>>::const_iterator netbegin() const;
+    std::map<std::string,std::vector<ss7_route>>::const_iterator netend() const;
     bool operator==(const unsigned int&) const;
     bool operator==(const ss7_node&) const;
   protected:

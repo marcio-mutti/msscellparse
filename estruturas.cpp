@@ -341,8 +341,20 @@ void ss7_route::set_dpc(const unsigned long &dpc_) {
     dpc=dpc_;
 }
 
+unsigned long ss7_route::get_dpc() const {
+    return dpc;
+}
+
 void ss7_route::add_connection(const unsigned long & apc) {
     conections.push_back(apc);
+}
+
+vector<unsigned long int>::const_iterator ss7_route::conn_begin() const {
+    return conections.cbegin();
+}
+
+vector<unsigned long int>::const_iterator ss7_route::conn_end() const {
+    return conections.cend();
 }
 
 ss7_node::ss7_node() :name(), opc(0) {
@@ -394,6 +406,14 @@ vector<ss7_route>::iterator ss7_node::add_full_route(const string & network,
 
 void ss7_node::add_redundant_route(vector<ss7_route>::iterator& it_route, const string& apc) {
     it_route->add_connection(stoul(apc));
+}
+
+map<string,vector<ss7_route>>::const_iterator ss7_node::netbegin() const {
+    return networks.cbegin();
+}
+
+map<string,vector<ss7_route>>::const_iterator ss7_node::netend() const {
+    return networks.cend();
 }
 
 bool ss7_node::operator==(const unsigned int & oth_opc) const {
